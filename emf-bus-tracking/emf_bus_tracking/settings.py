@@ -144,6 +144,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400
 
 OS_API_KEY = os.getenv("OS_API_KEY")
 
+KOSMOS_TARGET_ID = os.getenv("KOSMOS_TARGET_ID")
+KOSMOS_MAC_KEY = os.getenv("KOSMOS_MAC_KEY")
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
