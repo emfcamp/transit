@@ -1,0 +1,16 @@
+{
+  "agencies": [
+    {
+      "agency_key": "emf",
+      "url": "https://tracking.tfemf.uk/media/gtfs.zip"
+    }
+  ],
+  "allowEmptyTimetables": true,
+  "linkStopUrls": true,
+  "showMap": true,
+  "sqlitePath": "/data/gtfs.sqlite",
+  "outputFormat": "html",
+  "templatePath": "/views",
+  "mapkitToken": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlozTUY0OVVNWkQifQ.eyJpc3MiOiJNUTlUTjk3NzJVIiwiaWF0IjoxNzA2MjkwMTQ1LCJleHAiOjE3Mzc3NjMyMDAsIm9yaWdpbiI6Imh0dHBzOi8vYnVzLmVtZi5jYW1wIn0.BLWGCksXZ0zIV2TAXUJym6W7d2PAgAyJRK_7z75RT8kjjqxdS0MaGPlfTjM141SWwx9x6MEZRQZHbbw-bquRhQ",
+  "realtimeUrl": "https://tracking.tfemf.uk/media"
+}

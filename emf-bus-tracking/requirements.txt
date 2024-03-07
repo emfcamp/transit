@@ -1,0 +1,16 @@
+Django
+celery
+django-colorfield
+django-admin-sortable2
+grpcio-tools
+mypy-protobuf
+docker
+gunicorn
+psycopg2-binary
+geographiclib
+scipy
+pycryptodome
+requests
+shapely
+prometheus-client
+pymemcache

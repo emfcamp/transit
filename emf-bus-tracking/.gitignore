@@ -1,0 +1,10 @@
+gtfs-to-html-data/
+media/
+schedule/
+secrets/
+celerybeat-schedule.db
+db.sqlite3
+db.sqlite3.bak
+.idea/
+__pycache__/
+sim/

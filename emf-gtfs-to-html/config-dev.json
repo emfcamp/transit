@@ -1,0 +1,16 @@
+{
+  "agencies": [
+    {
+      "agency_key": "emf",
+      "url": "http://localhost:8000/media/gtfs.zip"
+    }
+  ],
+  "allowEmptyTimetables": true,
+  "linkStopUrls": true,
+  "showMap": true,
+  "sqlitePath": "./gtfs.sqlite",
+  "outputFormat": "html",
+  "templatePath": "./views",
+  "mapkitToken": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IlozTUY0OVVNWkQifQ.eyJpc3MiOiJNUTlUTjk3NzJVIiwiaWF0IjoxNzA5NzU5NzU1LCJleHAiOjE3MTIzNDgwMzMsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODg4OSJ9.Dlq05CJGJIMbkgS6jbsNumeJqv7AFO2MGMEA8LhVnkmrYKekArgAzRlV8wSrtQ2uFyKOMTT0A6s8lGpeRpXcHA",
+  "realtimeUrl": "http://localhost:8000/media"
+}

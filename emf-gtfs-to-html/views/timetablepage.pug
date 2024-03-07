@@ -1,0 +1,175 @@
+include formatting_functions.pug
+
+<!-- Timetable generated on #{Date()} using GTFS-to-HTML version #{config.gtfsToHtmlVersion} -->
+.timetable-container
+    h2
+        each route in _.uniqBy(_.flatMap(timetablePage.consolidatedTimetables, timetable => timetable.routes), 'route_id')
+            span.route(style=`background-color: #${route.route_color}; color: #${route.route_text_color}`)= route.route_short_name || ''
+        =timetablePage.timetable_page_label
+
+    script.
+        var maps = [];
+
+        var timeFormatOptions = {
+            hour: "numeric",
+            minute: "2-digit",
+        };
+
+    each timetable in timetablePage.consolidatedTimetables
+        .timetable(id=`timetable_id_${formatHtmlId(timetable.timetable_id)}`)
+            if timetable.service_notes !== null
+                    .service-notes= timetable.service_notes
+
+            .map-container(id=`map-container-timetable_id_${timetable.timetable_id}`)
+
+            table.table(summary= getTimetableSummary(timetable) data-orientation="horizontal")
+                thead
+                    tr
+                        th.stop-header Stop
+                        each trip, idx in timetable.orderedTrips
+                            th.run-header= formatTripName(trip, idx, timetable)
+                                each note in getNotesForTrip(timetable.notes, trip)
+                                    a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
+                                        sup= note.symbol
+                tbody
+                    each stop in timetable.stops
+                        tr.stop-row(id=`stop_id_${formatHtmlId(stop.stop_id)}`)
+                            th.stop-name
+                                - var stopName = `${stop.stop_name}${stop.type === 'arrival' ? ' (Arrival)' : stop.type === 'departure' ? ' (Departure)' : ''}`;
+
+                                if stop.stop_url
+                                    a.stop-name(href=`${stop.stop_url}`)= stopName
+                                        each note in getNotesForStop(timetable.notes, stop)
+                                            a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
+                                                sup= note.symbol
+                                else
+                                    .stop-name= stopName
+                                        each note in getNotesForStop(timetable.notes, stop)
+                                            a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
+                                                sup= note.symbol
+                                .stop-code= stop.stop_code
+                                .stop-description= stop.stop_desc
+
+                            each stoptime in stop.trips
+                                td.stop-time(class=`stop-time ${stoptime.classes.join(' ')}`, id=`trip_id_${formatHtmlId(stoptime.trip_id)}_stop_id_${formatHtmlId(stoptime.stop_id)}_seq_${stoptime.stop_sequence}_${stoptime.type}`)
+                                    span.stop-time-text!= stoptime.formatted_time
+                                    span.stop-time-rt-text
+                                    each note in getNotesForStoptime(timetable.notes, stoptime)
+                                        a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
+                                            sup= note.symbol
+
+            if hasNotesOrNotices(timetable)
+                .notes
+                    if timetable.requestPickupSymbolUsed
+                        .note(id=`note-${timetable.timetable_id}-request-pickup`)= `${config.requestPickupSymbol} = ${config.requestPickupText}`
+                    if timetable.noPickupSymbolUsed
+                        .note(id=`note-${timetable.timetable_id}-no-pickup`)= `${config.noPickupSymbol} = ${config.noPickupText}`
+                    if timetable.requestDropoffSymbolUsed
+                        .note(id=`note-${timetable.timetable_id}-request-dropoff`)= `${config.requestDropoffSymbol} = ${config.requestDropoffText}`
+                    if timetable.noDropoffSymbolUsed
+                        .note(id=`note-${timetable.timetable_id}-no-dropoff`)= `${config.noDropoffSymbol} = ${config.noDropoffText}`
+                    if timetable.noServiceSymbolUsed
+                        .note(id=`note-${timetable.timetable_id}-no-service`)= `${config.noServiceSymbol} = ${config.noServiceText}`
+                    if timetable.interpolatedStopSymbolUsed
+                        .note(id=`note-${timetable.timetable_id}-interpolated-stop`)= `${config.interpolatedStopSymbol} = ${config.interpolatedStopText}`
+                    each note in _.uniqBy(timetable.notes, 'note_id')
+                        .note(id=`note-${timetable.timetable_id}-${note.note_id}`)= `${note.symbol} = ${note.note}`
+
+
+            script.
+                var {id, geojson, routes} = !{JSON.stringify(prepareMapData(timetable))};
+
+                maps.push({container_id: `map-container-${id}`, geojson: geojson, routes: routes});
+
+
+    .rt-info
+        div
+            span.rt-demo.rt-exact-demo 00:00
+            span= ' = Real-time data'
+        div
+            span.rt-demo 00:00
+            span= ' = Estimated times'
+
+    script.
+        function mapkitSetup() {
+            maps.forEach(function (map) {
+                console.log(map);
+                map.map = renderMap(map.container_id, map.geojson);
+            });
+            update();
+            setInterval(function () {
+                update();
+            }, 1000);
+        }
+
+        function update() {
+            fetch("#{config.realtimeUrl}/gtfs-rt.json", {cache: "no-store"}).then(function (response) {
+                return response.json();
+            }).then(function (json) {
+                maps.forEach(function (map) {
+                    processPositions(map.map, json.vehiclePositions.filter(function (position) {
+                        if (!position.trip || !position.trip.routeId)
+                            return false;
+
+                        return position.trip.routeId in map.routes;
+                    }));
+                    processTripUpdates(map.map, json.tripUpdates.filter(function (tripUpdate) {
+                        if (!tripUpdate.trip || !tripUpdate.trip.routeId)
+                            return false;
+                        return tripUpdate.trip.routeId in map.routes;
+                    }));
+                });
+            }).catch(function (error) {
+                console.error(error);
+            });
+        }
+
+        function processTripUpdates(map, tripUpdates) {
+            var seenStopTimes = [];
+
+            tripUpdates.forEach(function (tripUpdate) {
+                tripUpdate.stopTimeUpdate.forEach(function (stopTimeUpdate, i) {
+                    if (stopTimeUpdate.arrival) {
+                        var stopTimeIdArrival = `trip_id_${tripUpdate.trip.tripId}_stop_id_${stopTimeUpdate.stopId}_seq_${stopTimeUpdate.stopSequence}_arrival`;
+                        var stopTimeArrival = document.getElementById(stopTimeIdArrival);
+                        if (stopTimeArrival) {
+                            seenStopTimes.push(stopTimeIdArrival);
+                            stopTimeArrival.classList.add('rt');
+                            if (stopTimeUpdate.arrival.uncertainty === 0) {
+                                stopTimeArrival.classList.add('rt-exact');
+                            } else {
+                                stopTimeArrival.classList.remove('rt-exact');
+                            }
+                            var time = new Date(stopTimeUpdate.arrival.time * 1000);
+                            stopTimeArrival.querySelector('.stop-time-rt-text').textContent = time.toLocaleTimeString("en-gb", timeFormatOptions);
+                        }
+                    }
+                    if (stopTimeUpdate.departure) {
+                        var stopTimeIdDeparture = i === 0 ?
+                            `trip_id_${tripUpdate.trip.tripId}_stop_id_${stopTimeUpdate.stopId}_seq_${stopTimeUpdate.stopSequence}_arrival` :
+                            `trip_id_${tripUpdate.trip.tripId}_stop_id_${stopTimeUpdate.stopId}_seq_${stopTimeUpdate.stopSequence}_departure`;
+                        var timeUpdate = i === 0 ? stopTimeUpdate.arrival : stopTimeUpdate.departure;
+                        var stopTimeDeparture = document.getElementById(stopTimeIdDeparture);
+                        if (stopTimeDeparture) {
+                            seenStopTimes.push(stopTimeIdDeparture);
+                            stopTimeDeparture.classList.add('rt');
+                            if (timeUpdate.uncertainty === 0) {
+                                stopTimeDeparture.classList.add('rt-exact');
+                            } else {
+                                stopTimeDeparture.classList.remove('rt-exact');
+                            }
+                            var time = new Date(timeUpdate.time * 1000);
+                            stopTimeDeparture.querySelector('.stop-time-rt-text').textContent = time.toLocaleTimeString("en-gb", timeFormatOptions);
+                        }
+                    }
+                });
+            });
+
+            var unseenStopTimes = Array.from(document.getElementsByClassName('stop-time')).filter(function (stopTime) {
+                return !seenStopTimes.includes(stopTime.id);
+            });
+            unseenStopTimes.forEach(function (stopTime) {
+                stopTime.classList.remove('rt');
+                stopTime.classList.remove('rt-exact');
+            });
+        }

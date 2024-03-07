@@ -1,0 +1,240 @@
+* {
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'Cymru Sans Transport';
+    src: url('../fonts/CymruSansTransport-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Cymru Sans Transport';
+    src: url('../fonts/CymruSansTransport-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+body {
+    background-color: #3c3c3c;
+    font-family: sans-serif;
+    color: #c8c8c8;
+    margin: 0;
+    padding: 0;
+}
+
+.map-container {
+    margin-top: 20px;
+    height: 500px;
+}
+
+.main-container {
+    background-color: #151735;
+    max-width: 950px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.banner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+}
+
+.banner img {
+    width: 75px;
+}
+
+.banner h1 {
+    letter-spacing: 0.6px;
+    font-size: 2.5em;
+    margin: 0;
+    font-weight: normal;
+    font-family: "Cymru Sans Transport", sans-serif;
+}
+
+.banner h1 a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.banner h1 .welsh {
+    font-weight: 500;
+}
+
+.timetable-pages {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-rows: 1fr;
+    grid-gap: 20px;
+}
+
+.timetable-page {
+    background-color: #c8c8c8;
+    border-radius: 5px;
+    padding: 10px;
+    display: block;
+    text-decoration: none;
+    color: #151735;
+}
+
+.timetable-page .timetable-label {
+    font-weight: bold;
+    color: #151735;
+    display: block;
+    font-size: 1.4em;
+}
+
+.route {
+    border-radius: 10px;
+    padding: 7px;
+    margin: 5px 0;
+    display: inline-block;
+}
+
+.timetable-page .timetable-days {
+    margin-left: 5px;
+    font-size: 1.2em;
+    vertical-align: middle;
+}
+
+.timetable-container {
+    background: #c8c8c8;
+    color: #151735;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    padding: 10px 0;
+    margin-top: 20px;
+}
+
+.timetable-container h2 {
+    margin-top: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.timetable-container .route {
+    margin: 0 10px 0 0;
+}
+
+.timetable-container .table {
+    margin: 10px;
+    border-collapse: collapse;
+    border: 2px solid #000;
+}
+
+.timetable-container .table thead th {
+    background-color: #151735;
+    color: #c8c8c8;
+    padding: 10px;
+}
+
+.timetable-container .table tbody th, .timetable-container .table tbody tr {
+    text-align: left;
+    padding: 10px;
+}
+
+.timetable-container .table tbody th .stop-code {
+    font-weight: normal;
+}
+
+@media (max-width: 950px) {
+    .timetable-container {
+        margin-left: -20px;
+        margin-right: -20px;
+        margin-bottom: -20px;
+    }
+}
+
+.footer {
+    background: #c8c8c8;
+    color: #151735;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.footer img {
+    max-width: 100%;
+    width: 250px;
+    margin-right: 10px;
+    align-self: end;
+}
+
+.service-alerts {
+    display: none;
+}
+
+#service-alerts {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-rows: 1fr;
+    grid-gap: 20px;
+}
+
+.alert {
+    background-color: #c8c8c8;
+    color: #151735;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.alert h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.4em;
+}
+
+.alert .cause, .alert .effect, .alert .severity {
+    margin-bottom: 5px;
+    display: block;
+    font-size: 1.2em;
+}
+
+.alert p {
+    font-size: 1.1em;
+}
+
+.alert a {
+    color: #089491;
+}
+
+.timetable .stop-time:not(.rt) .stop-time-rt-text {
+    display: none;
+}
+
+.timetable .stop-time.rt .stop-time-text {
+    display: none;
+}
+
+.timetable .stop-time.rt .stop-time-rt-text, .rt-info .rt-demo {
+    color: #067516;
+}
+
+.timetable .stop-time.rt-exact .stop-time-rt-text, .rt-info .rt-exact-demo {
+    font-weight: bold;
+}
+
+.timetable .stop-time.rt:not(.rt-exact)::after, .rt-info .rt-demo:not(.rt-exact-demo)::after {
+    content: "";
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background: url('../img/rt.png') no-repeat 50% 50%;
+    background-size: contain;
+    margin-left: 3px;
+    margin-right: 3px;
+    transform: translateY(-50%);
+}
+
+.rt-info {
+    padding: 10px;
+}
+
+.rt-info div {
+    margin-right: 10px;
+    display: inline-block;
+}

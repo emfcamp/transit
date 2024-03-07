@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load admin_urls %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/forms.css" %}">{% endblock %}
+
+{% block extrahead %}
+    {% if pending %}
+        <meta http-equiv="refresh" content="5">
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <h1>Update average speed data</h1>
+    {% if pending %}
+        <p>Update processing, please wait...</p>
+    {% else %}
+        <form action="" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <p>
+                The latest average speed data will be pull from the Ordinance Survey API and fitted to the path.
+                This process may take a few minutes.
+            </p>
+            <div class="submit-row">
+                <input type="submit" class="default" value="Update" name="_update"/>
+                <a href="{% url opts|admin_urlname:"change" object_id %}" class="closelink">Cancel</a>
+            </div>
+        </form>
+    {% endif %}
+{% endblock %}

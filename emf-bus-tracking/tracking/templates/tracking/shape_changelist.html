@@ -1,0 +1,8 @@
+{% extends "admin/change_list.html" %}
+{% load admin_urls %}
+
+{% block object-tools-items %}
+     {{ block.super }}
+
+    <li><a href='{% url opts|admin_urlname:"import" %}'>Import KML</a></li>
+{% endblock %}

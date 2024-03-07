@@ -1,0 +1,6 @@
+AuthKey*
+html/
+node_modules/
+.idea/
+gtfs.sqlite
+yarn.lock

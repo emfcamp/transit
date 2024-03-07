@@ -1,0 +1,98 @@
+-
+    function getTimetableSummary(timetable) {
+        var summary = `This table shows schedules for a selection of key stops on the route for ${timetable.timetable_label} ${timetable.dayList}.`;
+        if (timetable.orientation = 'vertical') {
+            summary += ' Stops and their schedule times are listed in the columns.';
+        } else if (timetable.orientation = 'horizontal') {
+            summary += ' Schedule times are listed in rows, starting with the stop name in the first cell of the row.';
+        } else if (timetable.orientation = 'hourly') {
+            summary += ' Schedule times are listed in rows, starting with the stop name in the first cell of the row and the minutes after the hour in the second row.';
+        }
+        return summary;
+    }
+
+    function formatRouteName(route) {
+        const hasLongName = route.route_long_name !== '' && route.route_long_name !== null;
+
+        if (hasLongName) {
+            return route.route_long_name;
+        }
+
+        return route.route_short_name;
+    }
+
+    function formatFrequencyWarning(frequencies) {
+        var warning = 'Trip times shown below are an example only. ';
+        frequencies.forEach((frequency, idx) => {
+            if (idx === 0) {
+                warning += 'This route runs every ';
+            } else {
+                warning += ' and ';
+            }
+            warning += `${frequency.headway_min} minutes between ${frequency.start_formatted_time} and ${frequency.end_formatted_time}`;
+        });
+        warning += '.';
+        return warning;
+    }
+
+    function formatAgencyName(agency) {
+        if (!agency || !agency.agency_name) {
+            return '';
+        }
+
+        return agency.agency_name;
+    }
+
+    function getAgencyTimetableGroups(timetablePages, agencies) {
+        const agencyIds = [];
+        for (const timetablePage of timetablePages) {
+            agencyIds.push(...timetablePage.agency_ids);
+        }
+
+        const uniqueAgencyIds = _.uniq(_.compact(agencyIds));
+
+        if (uniqueAgencyIds.length === 0) {
+            return [{
+                agency: _.first(agencies),
+                timetablePages
+            }];
+        }
+
+        return _.orderBy(uniqueAgencyIds.map(agencyId => {
+            return {
+                agency: agencies.find(agency => agency.agency_id === agencyId) || _.first(agencies),
+                timetablePages: timetablePages.filter(timetablePage => timetablePage.agency_ids.includes(agencyId))
+            };
+        }), timetableGroup => timetableGroup.agency.agency_name.toLowerCase());
+    }
+
+    function prepareMapData(timetable) {
+        const routes = {}
+        const minifiedGeojson = {
+            type: 'FeatureCollection',
+            features: []
+        }
+
+        for (const feature of timetable.geojson.features) {
+            if (feature.geometry.type === 'LineString') {
+                feature.properties = {
+                    route_color: feature.properties.route_color
+                }
+                minifiedGeojson.features.push(feature)
+            } else if (feature.geometry.type === 'Point') {
+                for (const route of feature.properties.routes) {
+                    routes[route.route_id] = route
+                }
+
+                feature.properties.routes = feature.properties.routes.map(route => route.route_id)
+
+                minifiedGeojson.features.push(_.omit(feature, ['location_type', 'tts_stop_name']))
+            }
+        }
+
+        return {
+            id: `timetable_id_${formatHtmlId(timetable.timetable_id)}`,
+            routes,
+            geojson: minifiedGeojson
+        }
+    }

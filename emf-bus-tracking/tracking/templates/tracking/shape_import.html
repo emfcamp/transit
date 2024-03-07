@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/forms.css" %}">{% endblock %}
+
+{% block content %}
+    <h1>Import KML</h1>
+    <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>
+            The point order in the KML file will be used as the inbound direction a route.
+            The outbound direction will use the points in the reverse order.
+        </p>
+        <fieldset class="module">
+            <div class="form-row">
+                <label for="kml_file">KML file</label>
+                <input type="file" name="kml_file" id="kml_file" required />
+            </div>
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" class="default" value="Submit" name="_save"/>
+        </div>
+    </form>
+{% endblock %}

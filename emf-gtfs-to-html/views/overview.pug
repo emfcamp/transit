@@ -1,0 +1,36 @@
+include formatting_functions.pug
+
+.agencies
+    each timetablePageGroup in getAgencyTimetableGroups(timetablePages, agencies)
+        h2= `${formatAgencyName(timetablePageGroup.agency)} Routes`
+        .timetable-pages
+            each timetablePage in timetablePageGroup.timetablePages
+                a.timetable-page(href=`${timetablePage.relativePath}`)
+                    span.timetable-label= timetablePage.timetable_page_label
+                    each route in _.uniqBy(_.flatMap(timetablePage.consolidatedTimetables, timetable => timetable.routes), 'route_id')
+                        span.route(style=`background-color: #${route.route_color}; color: #${route.route_text_color};`)= route.route_short_name
+                    span.timetable-days= timetablePage.dayList
+
+    #map-container.overview-map.map-container
+
+    script.
+        var geojson = !{JSON.stringify(geojson) || '\'\''};
+
+        function mapkitSetup() {
+            var map = renderMap("map-container", geojson);
+            update(map);
+            setInterval(function () {
+                update(map);
+            }, 1000);
+        }
+
+        function update(map) {
+            fetch("#{config.realtimeUrl}/gtfs-rt.json", {cache: "no-store"}).then(function (response) {
+                return response.json();
+            }).then(function (json) {
+                processAlerts(map, json.alerts);
+                processPositions(map, json.vehiclePositions);
+            }).catch(function (error) {
+                console.error(error);
+            });
+        }

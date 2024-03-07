@@ -1,0 +1,15 @@
+gtfs-to-html-data/
+media/
+schedule/
+.dockerignore
+.gitignore
+build.sh
+celerybeat-schedule.db
+db.sqlite3
+db.sqlite3.bak
+Dockerfile
+gtfs-realtime.proto
+.idea/
+__pycache__/
+secrets/
+simulator.py

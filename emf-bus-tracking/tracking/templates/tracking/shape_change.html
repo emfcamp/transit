@@ -1,0 +1,8 @@
+{% extends "admin/change_form.html" %}
+{% load admin_urls %}
+
+{% block object-tools-items %}
+     {{ block.super }}
+
+    <li><a href='{% url opts|admin_urlname:"update_average_speed" object_id %}'>Update average speed data</a></li>
+{% endblock %}
