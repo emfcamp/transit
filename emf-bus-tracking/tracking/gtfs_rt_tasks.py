@@ -110,8 +110,7 @@ def add_vehicle_positions(msg: gtfs_realtime_pb2.FeedMessage, msg_json: dict):
 
     for vehicle in models.Vehicle.objects.all():
         last_position = vehicle.positions.order_by('-timestamp').first()
-        # if last_position and last_position.timestamp > cutoff:
-        if last_position:
+        if last_position and last_position.timestamp > cutoff:
             journey = vehicle.journeys.filter(
                 real_time_state=models.Journey.RT_STATE_ACTIVE
             ).first()

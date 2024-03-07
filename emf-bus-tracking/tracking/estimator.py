@@ -9,7 +9,9 @@ import logging
 import contextlib
 import time
 import django.core.cache
+import emf_bus_tracking.celery
 from celery import shared_task
+from django.utils import timezone
 from django.db import transaction
 
 from . import models, consts
@@ -21,6 +23,11 @@ MINIMUM_STOP_TIME = datetime.timedelta(seconds=60)
 GPS_VARIANCE = 2.5
 
 LOCK_EXPIRE = 60 * 5  # 5 minutes
+
+
+@emf_bus_tracking.celery.app.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    sender.add_periodic_task(15.0, update_journey_estimates.s())
 
 
 @contextlib.contextmanager
@@ -213,18 +220,20 @@ def vehicle_report(self, vehicle_id: str):
     update_vehicle_journey_from_report(self.app.oid, update_state)
 
 
-@shared_task(bind=True, ignore_result=True)
-def update_vehicle_journey_from_estimate(self, vehicle_id: str, now: int):
-    now = datetime.datetime.fromtimestamp(now, tz=datetime.timezone.utc)
-    vehicle = models.Vehicle.objects.get(id=vehicle_id)
-
-    journey = models.Journey.objects.filter(
-        vehicle=vehicle,
-        date=now.date(),
+@shared_task(ignore_result=True)
+def update_journey_estimates():
+    now = timezone.now()
+    active_journeys = models.Journey.objects.filter(
         real_time_state=models.Journey.RT_STATE_ACTIVE
-    ).first()
-    if not journey:
-        return
+    )
+    for journey in active_journeys:
+        update_vehicle_journey_from_estimate(journey.id, int(now.timestamp()))
+
+
+@shared_task(bind=True, ignore_result=True)
+def update_vehicle_journey_from_estimate(self, journey_id: str, now: int):
+    now = datetime.datetime.fromtimestamp(now, tz=datetime.timezone.utc)
+    journey = models.Journey.objects.get(id=journey_id)
 
     with memcache_lock(f"journey_update_{journey.id}", self.app.oid) as acquired:
         if not acquired:
@@ -237,7 +246,9 @@ def update_vehicle_journey_from_estimate(self, vehicle_id: str, now: int):
         if kalman_distance_to_next_stop is None:
             return
 
-        logging.info(f"Vehicle {vehicle} kalman estimate distance to next stop: {kalman_distance_to_next_stop:.2f}m")
+        if journey.vehicle:
+            logging.info(f"Vehicle {journey.vehicle} kalman estimate distance to next stop: "
+                         f"{kalman_distance_to_next_stop:.2f}m")
 
         next_stop = journey.points.filter(
             real_time_arrival__isnull=True
@@ -254,7 +265,8 @@ def update_vehicle_journey_from_estimate(self, vehicle_id: str, now: int):
                 path=path, next_point=Point(lat=next_stop.stop.latitude, long=next_stop.stop.longitude),
                 distance_to_next_stop=kalman_distance_to_next_stop, now=now
             )
-            logging.info(f"Vehicle {vehicle} arrival time at next stop: {time_next_stop}")
+            if journey.vehicle:
+                logging.info(f"Vehicle {journey.vehicle} arrival time at next stop: {time_next_stop}")
 
         last_stop = journey.points.order_by('order').last()
 
@@ -263,10 +275,11 @@ def update_vehicle_journey_from_estimate(self, vehicle_id: str, now: int):
             next_stop.estimated_departure = estimate_departure_time_from_stop(now, next_stop).time()
         next_stop.save()
 
-        log_estimates(vehicle, next_stop)
+        if journey.vehicle:
+            log_estimates(journey.vehicle, next_stop)
 
         update_future_stops_arrival_time(
-            journey=journey, vehicle=vehicle, path=path, start_stop=next_stop,
+            journey=journey, vehicle=journey.vehicle, path=path, start_stop=next_stop,
             now=now
         )
 
@@ -640,7 +653,7 @@ def find_point_on_path(search_point: Point, path: Path) -> typing.Tuple[int, flo
 
 
 def update_future_stops_arrival_time(
-        journey: models.Journey, vehicle: models.Vehicle, path: Path,
+        journey: models.Journey, vehicle: typing.Optional[models.Vehicle], path: Path,
         start_stop: models.JourneyPoint, now: datetime.datetime
 ):
     next_stop: typing.Optional[models.JourneyPoint] = journey.points.filter(
@@ -671,7 +684,8 @@ def update_future_stops_arrival_time(
         next_stop.estimated_departure = None
     next_stop.save()
 
-    log_estimates(vehicle, next_stop)
+    if vehicle:
+        log_estimates(vehicle, next_stop)
 
     update_future_stops_arrival_time(
         journey=journey, vehicle=vehicle, path=path, start_stop=next_stop, now=next_time
