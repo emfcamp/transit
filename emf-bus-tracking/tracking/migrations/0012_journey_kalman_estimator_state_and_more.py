@@ -35,7 +35,6 @@ class Migration(migrations.Migration):
             field=models.CharField(
                 max_length=15,
                 unique=True,
-                validators=[tracking.models.validate_imei],
                 verbose_name="IEMI",
             ),
         ),

@@ -107,7 +107,6 @@ class Migration(migrations.Migration):
                     models.CharField(
                         max_length=15,
                         unique=True,
-                        validators=[tracking.models.validate_imei],
                     ),
                 ),
                 (
@@ -116,7 +115,6 @@ class Migration(migrations.Migration):
                         blank=True,
                         max_length=64,
                         null=True,
-                        validators=[tracking.models.validate_aes_key],
                         verbose_name="AES encryption key",
                     ),
                 ),
@@ -126,7 +124,6 @@ class Migration(migrations.Migration):
                         blank=True,
                         max_length=64,
                         null=True,
-                        validators=[tracking.models.validate_aes_key],
                         verbose_name="AES decryption key",
                     ),
                 ),
