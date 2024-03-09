@@ -4,6 +4,7 @@ html
         title TfEMF
         meta(charset="utf-8")
         meta(name="viewport" content="initial-scale=1.0, width=device-width")
+        link(rel="stylesheet" href=`https://bus.emf.camp/about/css/style.css`)
         link(rel="stylesheet" href=`${config.assetPath}css/style.css`)
 
         script(src="https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.core.js" crossorigin async data-callback="initMapKit")
@@ -12,12 +13,16 @@ html
     body
         .main-container
             .banner
-                img(src=`${config.assetPath}img/logo2.svg` alt="TfEMF Logo")
+                div.logo
+                    img(src=`https://bus.emf.camp/about/img/logo.svg` alt="TfEMF Logo")
                 h1
                     a(href="/")
                         span.welsh Trafnidiaeth EMF
                         br
                         | Transport for EMF
+
+            .nav
+                a(href="https://bus.emf.camp/about") About & FAQs
 
             .service-alerts
                 h2 Service Alerts
@@ -28,7 +33,7 @@ html
             .footer
                 p.generated Generated at #{new Date().toLocaleTimeString()} on #{new Date().toLocaleDateString('en-gb', {year: "numeric", month: "short", day: "numeric"})}.
 
-                img(src=`${config.assetPath}img/evv.png` alt="EVV Logo")
+                img(src=`https://bus.emf.camp/about/img/evv.png` alt="EVV Logo")
 
         script.
             var service_alerts_dom = document.getElementById('service-alerts');
@@ -68,7 +73,7 @@ html
                         showsUserLocationControl: true,
                         region: new mapkit.CoordinateRegion(
                             new mapkit.Coordinate(52.036272292565165, -2.4055310992832406),
-                            new mapkit.CoordinateSpan(.01, .01)
+                            new mapkit.CoordinateSpan(.05, .05)
                         )
                     });
 

@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.conf import settings
 from celery import shared_task
 from django.core.files.storage import default_storage
-from . import models
+from tracking import models
 
 
 @shared_task(
@@ -387,7 +387,7 @@ def write_timetables_file(file):
         csv_file.writeheader()
 
         for route in models.Route.objects.all():
-            dates = route.journey_set.all().values('date').distinct().order_by('date')
+            dates = route.journey_set.filter(public=True).values('date').distinct().order_by('date')
             for date in dates:
                 date = date["date"]
                 csv_file.writerow({
@@ -408,6 +408,7 @@ def write_timetables_file(file):
                     "service_notes": "",
                     "direction_name": "Inbound",
                     "orientation": "horizontal",
+                    "show_trip_continuation": "1",
                 })
                 csv_file.writerow({
                     "timetable_id": f"{route.id}-{date.isoformat()}-outbound",
@@ -427,4 +428,5 @@ def write_timetables_file(file):
                     "service_notes": "",
                     "direction_name": "Outbound",
                     "orientation": "horizontal",
+                    "show_trip_continuation": "1",
                 })

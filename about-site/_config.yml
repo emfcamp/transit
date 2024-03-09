@@ -1,0 +1,8 @@
+title: Transport for EMF
+baseurl: "/about"
+url: "https://bus.emf.camp"
+
+plugins:
+  - jekyll-feed
+
+exclude: []

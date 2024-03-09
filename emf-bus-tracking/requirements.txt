@@ -14,3 +14,4 @@ requests
 shapely
 prometheus-client
 pymemcache
+django-cors-headers

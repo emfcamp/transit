@@ -1,0 +1,133 @@
+* {
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'Cymru Sans Transport';
+    src: url('../fonts/CymruSansTransport-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Cymru Sans Transport';
+    src: url('../fonts/CymruSansTransport-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    background-color: #3c3c3c;
+    font-family: sans-serif;
+    color: #c8c8c8;
+    margin: 0;
+    padding: 0;
+}
+
+.main-container {
+    background-color: #151735;
+    max-width: 950px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-container .body {
+    flex-grow: 1;
+}
+
+.banner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+}
+
+.banner .logo {
+    flex-shrink: 1;
+    flex-basis: 75px;
+}
+
+.banner .logo img {
+    max-width: 100%;
+}
+
+.banner h1 {
+    letter-spacing: 0.6px;
+    font-size: 2.5em;
+    margin: 0;
+    font-weight: normal;
+    font-family: "Cymru Sans Transport", sans-serif;
+}
+
+.banner h1 a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.banner h1 .welsh {
+    font-weight: 500;
+}
+
+.footer {
+    background: #c8c8c8;
+    color: #151735;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.footer img {
+    max-width: 100%;
+    width: 250px;
+    margin-right: 10px;
+    align-self: end;
+}
+
+@media (max-width: 950px) {
+    .footer {
+        margin-left: -20px;
+        margin-right: -20px;
+    }
+}
+
+.nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 15px;
+    font-size: 1.3em;
+    margin-top: 20px;
+    font-weight: bold;
+}
+
+.nav a {
+    color: #c8c8c8;
+    text-decoration: none;
+}
+
+.nav a:hover {
+    text-decoration: underline;
+    color: white;
+}
+
+.nav a:not(:last-of-type) {
+    border-right: 3px solid white;
+    padding-right: 15px;
+}
+
+.body a {
+    color: #c8c8c8;
+}
+
+.body a:hover {
+    color: white;
+}

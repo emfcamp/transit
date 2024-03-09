@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "celery",
     "colorfield",
+    "corsheaders",
     "adminsortable2",
     "tracking",
 ]
@@ -110,6 +111,10 @@ CELERY_BEAT_SCHEDULE = {
     "gtfs-rt": {
         "task": "tracking.gtfs_rt_tasks.generate_gtfs_rt",
         "schedule": 10,
+    },
+    "kalman-estimate": {
+        "task": "tracking.estimator.update_journey_estimates",
+        "schedule": 15,
     }
 }
 

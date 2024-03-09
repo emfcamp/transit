@@ -7,7 +7,7 @@ import emf_bus_tracking.celery
 from django.core.files.storage import default_storage
 from celery import shared_task
 from .gtfs_rt import gtfs_realtime_pb2
-from . import models, estimator
+from tracking import models, estimator
 
 
 @emf_bus_tracking.celery.app.on_after_configure.connect

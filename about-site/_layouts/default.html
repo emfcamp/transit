@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ site.title }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, width=device-width">
+    <link rel="stylesheet" href="{{ "/assets/css/style.css" | relative_url }}">
+</head>
+<body>
+<div class="main-container">
+    <div class="banner">
+        <div class="logo">
+            <img src="{{ "/assets/img/logo.svg" | relative_url }}" alt="TfEMF Logo">
+        </div>
+        <h1>
+            <a href="{{ site.url }}">
+                <span class="welsh">Trafnidiaeth EMF</span><br>
+                Transport for EMF
+            </a>
+        </h1>
+    </div>
+    <div class="nav">
+        <a href="{{ "/" | relative_url }}">Home</a>
+        <a href="https://bus.emf.camp">Timetables & Real-Time Data</a>
+    </div>
+    <div class="body">
+        {{ content }}
+    </div>
+    <div class="footer">
+        <p>Generated at {{ site.time | date: '%T on %b %d, %Y' }}</p>
+        <img src="{{ "/assets/img/evv.png" | relative_url }}" alt="EVV Logo">
+    </div>
+</div>
+</body>
+</html>
