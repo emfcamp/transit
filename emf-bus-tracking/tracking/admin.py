@@ -199,8 +199,3 @@ class ServiceAlertSelectorAdmin(admin.TabularInline):
 @admin.register(models.ServiceAlert)
 class ServiceAlertAdmin(admin.ModelAdmin):
     inlines = [ServiceAlertPeriodAdmin, ServiceAlertSelectorAdmin]
-
-
-@admin.register(models.Tracker)
-class TrackerAdmin(admin.ModelAdmin):
-    pass
