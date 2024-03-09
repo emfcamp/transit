@@ -11,7 +11,8 @@ from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils import timezone
 from django.contrib import messages
-from . import models, os_average_speed, gtfs_tasks
+from gtfs import gtfs_tasks
+from . import models, os_average_speed
 
 
 @admin.register(models.Stop)

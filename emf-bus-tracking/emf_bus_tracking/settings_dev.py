@@ -135,7 +135,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CELERY_RESULT_BACKEND = "rpc://"
 CELERY_BEAT_SCHEDULE = {
     "gtfs-rt": {
-        "task": "tracking.gtfs_rt_tasks.generate_gtfs_rt",
+        "task": "gtfs.gtfs_rt_tasks.generate_gtfs_rt",
         "schedule": 10,
     }
 }
@@ -144,7 +144,7 @@ GTFS_CONFIG = {
     "agency": {
         "id": "EMF",
         "name": "Electromagnetic Field",
-        "url": "https://www.emfcamp.org",
+        "url": "https://bus.emf.camp",
         "timezone": "Europe/London",
         "lang": "en",
         "phone": None,

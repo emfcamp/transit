@@ -109,7 +109,7 @@ CELERY_ACCEPT_CONTENT = ["json"]
 
 CELERY_BEAT_SCHEDULE = {
     "gtfs-rt": {
-        "task": "tracking.gtfs_rt_tasks.generate_gtfs_rt",
+        "task": "gtfs.gtfs_rt_tasks.generate_gtfs_rt",
         "schedule": 10,
     },
     "kalman-estimate": {
@@ -122,7 +122,7 @@ GTFS_CONFIG = {
     "agency": {
         "id": "EMF",
         "name": "Electromagnetic Field",
-        "url": "https://www.emfcamp.org",
+        "url": "https://bus.emf.camp",
         "timezone": "Europe/London",
         "lang": "en",
         "phone": None,

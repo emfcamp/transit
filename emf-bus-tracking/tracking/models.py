@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from colorfield.fields import ColorField
 from django.core.exceptions import ObjectDoesNotExist
-from .gtfs_rt import gtfs_realtime_pb2
+from gtfs.gtfs_rt import gtfs_realtime_pb2
 import uuid
 import re
 import typing
