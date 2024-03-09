@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 import tracking.models
 import re
+import uuid
 import string
 import typing
 
@@ -70,10 +71,4 @@ class Tracker(models.Model):
         if self.aes_decryption_key:
             return bytes.fromhex(self.aes_decryption_key)
         else:
-            return None
-
-    def vehicle_opt(self) -> typing.Optional[Vehicle]:
-        try:
-            return self.vehicle
-        except ObjectDoesNotExist:
             return None
