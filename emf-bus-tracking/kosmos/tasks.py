@@ -1,7 +1,13 @@
 from celery import shared_task
-from . import models, track24_gps, nal_gps, estimator, consts
+from . import models, track24_gps, nal_gps
+import tracking.models
+import tracking.estimator
 import base64
 import datetime
+
+
+KNOTS_TO_MS = 0.51444444444444
+KMH_TO_MS = 0.27777777777778
 
 
 @shared_task(ignore_result=True)
@@ -32,7 +38,7 @@ def handle_kosmos_message(message: dict):
 
 def handle_t24_gps(tracker: models.Tracker, t24_message: track24_gps.Track24Message, message: dict):
     message_id = message["id"]
-    if models.VehiclePosition.objects.filter(update_id=message_id).count():
+    if tracking.models.VehiclePosition.objects.filter(update_id=message_id).count():
         return
 
     time_of_session = datetime.datetime.fromisoformat(message["header"]["time_of_session"])
@@ -44,27 +50,26 @@ def handle_t24_gps(tracker: models.Tracker, t24_message: track24_gps.Track24Mess
     if timestamp > time_of_session:
         timestamp -= datetime.timedelta(days=1)
 
-    vehicle = tracker.vehicle_opt()
-    if vehicle:
-        last_position = vehicle.positions.order_by("-timestamp").first()
+    if tracker.vehicle:
+        last_position = tracker.vehicle.positions.order_by("-timestamp").first()
 
-        models.VehiclePosition(
-            vehicle=vehicle,
+        tracking.models.VehiclePosition(
+            vehicle=tracker.vehicle,
             timestamp=timestamp,
             latitude=gps_message.latitude,
             longitude=gps_message.longitude,
-            velocity_ms=gps_message.velocity_knots * consts.KNOTS_TO_MS,
+            velocity_ms=gps_message.velocity_knots * KNOTS_TO_MS,
             heading=gps_message.heading,
             update_id=message_id
         ).save()
 
         if last_position is None or timestamp > last_position.timestamp:
-            estimator.vehicle_report.delay(str(vehicle.id))
+            tracking.estimator.vehicle_report.delay(str(tracker.vehicle.id))
 
 
 def handle_nal_gps(tracker: models.Tracker, nal_report: nal_gps.NALReport, message: dict):
     message_id = message["id"]
-    if models.VehiclePosition.objects.filter(update_id=message_id).count():
+    if tracking.models.VehiclePosition.objects.filter(update_id=message_id).count():
         return
 
     timestamp = nal_report.time()
@@ -77,12 +82,11 @@ def handle_nal_gps(tracker: models.Tracker, nal_report: nal_gps.NALReport, messa
     if timestamp > time_of_session:
         timestamp -= datetime.timedelta(days=1)
 
-    vehicle = tracker.vehicle_opt()
-    if vehicle:
-        last_position = vehicle.positions.order_by("-timestamp").first()
+    if tracker.vehicle:
+        last_position = tracker.vehicle.positions.order_by("-timestamp").first()
 
-        models.VehiclePosition(
-            vehicle=vehicle,
+        tracking.models.VehiclePosition(
+            vehicle=tracker.vehicle,
             timestamp=timestamp,
             latitude=nal_report.latitude(),
             longitude=nal_report.longitude(),
@@ -92,4 +96,4 @@ def handle_nal_gps(tracker: models.Tracker, nal_report: nal_gps.NALReport, messa
         ).save()
 
         if last_position is None or timestamp > last_position.timestamp:
-            estimator.vehicle_report.delay(str(vehicle.id))
+            tracking.estimator.vehicle_report.delay(str(tracker.vehicle.id))

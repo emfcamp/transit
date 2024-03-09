@@ -9,7 +9,3 @@ class Days(enum.Enum):
     FRIDAY = 4
     SATURDAY = 5
     SUNDAY = 6
-
-
-KNOTS_TO_MS = 0.51444444444444
-KMH_TO_MS = 0.27777777777778

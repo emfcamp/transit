@@ -1,2 +1,3 @@
-from . import os_average_speed, estimator, kosmos_tasks
+from . import os_average_speed
+from . import estimator
 

@@ -1,1 +1,2 @@
-from . import gtfs_tasks, gtfs_rt_tasks
+from . import gtfs_tasks
+from . import gtfs_rt_tasks

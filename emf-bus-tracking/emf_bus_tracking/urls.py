@@ -21,5 +21,6 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("kosmos/", include("kosmos.urls")),
     path("", include("tracking.urls"))
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -10,7 +10,6 @@ from celery import shared_task
 from django.core.files.storage import default_storage
 from tracking import models
 
-
 @shared_task(
     autoretry_for=(Exception,), retry_backoff=1, retry_backoff_max=60, max_retries=10, default_retry_delay=3,
     ignore_result=True

@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "colorfield",
     "corsheaders",
     "adminsortable2",
+    "gtfs",
+    "kosmos",
     "tracking",
 ]
 

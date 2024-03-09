@@ -4,7 +4,7 @@ html
         title TfEMF
         meta(charset="utf-8")
         meta(name="viewport" content="initial-scale=1.0, width=device-width")
-        link(rel="stylesheet" href=`https://bus.emf.camp/about/css/style.css`)
+        link(rel="stylesheet" href=`https://bus.emf.camp/about/assets/css/style.css`)
         link(rel="stylesheet" href=`${config.assetPath}css/style.css`)
 
         script(src="https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.core.js" crossorigin async data-callback="initMapKit")
@@ -14,7 +14,7 @@ html
         .main-container
             .banner
                 div.logo
-                    img(src=`https://bus.emf.camp/about/img/logo.svg` alt="TfEMF Logo")
+                    img(src=`https://bus.emf.camp/about/assets/img/logo.svg` alt="TfEMF Logo")
                 h1
                     a(href="/")
                         span.welsh Trafnidiaeth EMF
@@ -33,7 +33,7 @@ html
             .footer
                 p.generated Generated at #{new Date().toLocaleTimeString()} on #{new Date().toLocaleDateString('en-gb', {year: "numeric", month: "short", day: "numeric"})}.
 
-                img(src=`https://bus.emf.camp/about/img/evv.png` alt="EVV Logo")
+                img(src=`https://bus.emf.camp/about/assets/img/evv.png` alt="EVV Logo")
 
         script.
             var service_alerts_dom = document.getElementById('service-alerts');

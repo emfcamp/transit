@@ -1,8 +1,3 @@
-.map-container {
-    margin-top: 20px;
-    height: 500px;
-}
-
 .timetable-pages {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -86,7 +81,7 @@
         margin-bottom: -20px;
     }
 
-    .footer, .overview-map {
+    .overview-map {
         margin-left: -20px;
         margin-right: -20px;
     }

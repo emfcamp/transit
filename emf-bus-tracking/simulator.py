@@ -35,10 +35,9 @@ def main():
             data_point = data.pop(0)
             data_time = datetime.datetime.fromtimestamp(data_point["timestamp"])
             print(f"Pushing update {data_time}: {data_point}")
-            vehicle = tracker.vehicle_opt()
-            if vehicle:
+            if tracker.vehicle:
                 tracking.models.VehiclePosition(
-                    vehicle=vehicle,
+                    vehicle=tracker.vehicle,
                     timestamp=data_time,
                     latitude=data_point["lat"],
                     longitude=data_point["long"],
