@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "adminsortable2",
     "gtfs",
+    "hafas",
     "kosmos",
     "tracking",
 ]

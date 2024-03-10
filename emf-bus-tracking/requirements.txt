@@ -15,3 +15,4 @@ shapely
 prometheus-client
 pymemcache
 django-cors-headers
+xsdata[cli,lxml]
