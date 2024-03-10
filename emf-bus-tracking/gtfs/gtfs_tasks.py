@@ -10,6 +10,7 @@ from celery import shared_task
 from django.core.files.storage import default_storage
 from tracking import models
 
+
 @shared_task(
     autoretry_for=(Exception,), retry_backoff=1, retry_backoff_max=60, max_retries=10, default_retry_delay=3,
     ignore_result=True
@@ -25,10 +26,10 @@ def generate_gtfs_schedule():
     }
 
     with output_zip.open("agency.txt", "w") as file:
-        write_agency_file(file)
+        write_agency_file(file, output_json)
 
     with output_zip.open("stops.txt", "w") as file:
-        write_stops_file(file)
+        write_stops_file(file, output_json)
 
     with output_zip.open("routes.txt", "w") as file:
         write_routes_file(file, output_json)
@@ -49,7 +50,7 @@ def generate_gtfs_schedule():
         write_timetables_file(file)
 
     with output_zip.open("feed_info.txt", "w") as file:
-        write_feed_info_file(file, feed_version)
+        write_feed_info_file(file, feed_version, output_json)
 
     output_zip.close()
     with default_storage.open('gtfs.zip', "wb") as f:
@@ -79,7 +80,18 @@ def generate_schedule_html():
     })
 
 
-def write_agency_file(file):
+def write_agency_file(file, output_json: dict):
+    data = {
+        "agency_id": settings.GTFS_CONFIG["agency"]["id"],
+        "agency_name": settings.GTFS_CONFIG["agency"]["name"],
+        "agency_url": settings.GTFS_CONFIG["agency"]["url"],
+        "agency_timezone": settings.GTFS_CONFIG["agency"]["timezone"],
+        "agency_lang": settings.GTFS_CONFIG["agency"]["lang"] or "",
+        "agency_phone": settings.GTFS_CONFIG["agency"]["phone"] or "",
+        "agency_fare_url": settings.GTFS_CONFIG["agency"]["fare_url"] or "",
+        "agency_email": settings.GTFS_CONFIG["agency"]["email"] or "",
+    }
+
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "agency_id",
@@ -93,19 +105,14 @@ def write_agency_file(file):
         ])
         csv_file.writeheader()
 
-        csv_file.writerow({
-            "agency_id": settings.GTFS_CONFIG["agency"]["id"],
-            "agency_name": settings.GTFS_CONFIG["agency"]["name"],
-            "agency_url": settings.GTFS_CONFIG["agency"]["url"],
-            "agency_timezone": settings.GTFS_CONFIG["agency"]["timezone"],
-            "agency_lang": settings.GTFS_CONFIG["agency"]["lang"] or "",
-            "agency_phone": settings.GTFS_CONFIG["agency"]["phone"] or "",
-            "agency_fare_url": settings.GTFS_CONFIG["agency"]["fare_url"] or "",
-            "agency_email": settings.GTFS_CONFIG["agency"]["email"] or "",
-        })
+        csv_file.writerow(data)
+
+    output_json["agency"] = data
 
 
-def write_stops_file(file):
+def write_stops_file(file, output_json: dict):
+    output_json["stops"] = {}
+
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "stop_id",
@@ -127,7 +134,7 @@ def write_stops_file(file):
         csv_file.writeheader()
 
         for stop in models.Stop.objects.filter(internal=False):
-            csv_file.writerow({
+            data = {
                 "stop_id": str(stop.id),
                 "stop_code": stop.code or "",
                 "stop_name": stop.name,
@@ -143,10 +150,13 @@ def write_stops_file(file):
                 "wheelchair_boarding": "",
                 "level_id": "",
                 "platform_code": "",
-            })
+            }
+            csv_file.writerow(data)
+            output_json["stops"][str(stop.id)] = data
 
 
 def write_routes_file(file, output_json: dict):
+    output_json["routes"] = {}
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "route_id",
@@ -166,7 +176,7 @@ def write_routes_file(file, output_json: dict):
         csv_file.writeheader()
 
         for route in models.Route.objects.all().order_by('order'):
-            csv_file.writerow({
+            data = {
                 "route_id": str(route.id),
                 "agency_id": settings.GTFS_CONFIG["agency"]["id"],
                 "route_short_name": route.name,
@@ -180,17 +190,9 @@ def write_routes_file(file, output_json: dict):
                 "continuous_pickup": "",
                 "continuous_drop_off": "",
                 "network_id": "",
-            })
-            output_json["routes"].append({
-                "id": str(route.id),
-                "agency_id": settings.GTFS_CONFIG["agency"]["id"],
-                "name": route.name,
-                "desc": route.description,
-                "type": route.type,
-                "url": route.url,
-                "color": route.color,
-                "text_color": route.text_color,
-            })
+            }
+            csv_file.writerow(data)
+            output_json["routes"][str(route.id)] = data
 
 
 def write_trips_file(file):
@@ -309,7 +311,7 @@ def write_calendar_file(file):
             })
 
 
-def write_shapes_file(file):
+def write_shapes_file(file, output_json: dict):
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "shape_id",
@@ -330,9 +332,21 @@ def write_shapes_file(file):
             })
 
 
-def write_feed_info_file(file, version: str):
+def write_feed_info_file(file, version: str, output_json: dict):
     today = timezone.now().date()
     expiry = today + timezone.timedelta(days=7)
+
+    data = {
+        "feed_publisher_name": settings.GTFS_CONFIG["feed"]["publisher"]["name"],
+        "feed_publisher_url": settings.GTFS_CONFIG["feed"]["publisher"]["url"],
+        "feed_lang": settings.GTFS_CONFIG["feed"]["lang"],
+        "default_lang": "",
+        "feed_start_date": today.strftime("%Y%m%d"),
+        "feed_end_date": expiry.strftime("%Y%m%d"),
+        "feed_version": version,
+        "feed_contact_email": settings.GTFS_CONFIG["feed"]["contact_email"] or "",
+        "feed_contact_url": settings.GTFS_CONFIG["feed"]["contact_url"] or "",
+    }
 
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
@@ -348,17 +362,9 @@ def write_feed_info_file(file, version: str):
         ])
         csv_file.writeheader()
 
-        csv_file.writerow({
-            "feed_publisher_name": settings.GTFS_CONFIG["feed"]["publisher"]["name"],
-            "feed_publisher_url": settings.GTFS_CONFIG["feed"]["publisher"]["url"],
-            "feed_lang": settings.GTFS_CONFIG["feed"]["lang"],
-            "default_lang": "",
-            "feed_start_date": today.strftime("%Y%m%d"),
-            "feed_end_date": expiry.strftime("%Y%m%d"),
-            "feed_version": version,
-            "feed_contact_email": settings.GTFS_CONFIG["feed"]["contact_email"] or "",
-            "feed_contact_url": settings.GTFS_CONFIG["feed"]["contact_url"] or "",
-        })
+        csv_file.writerow(data)
+
+    output_json["feed_info"] = data
 
 
 def write_timetables_file(file):

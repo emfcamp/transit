@@ -2,7 +2,7 @@ include formatting_functions.pug
 
 .agencies
     each timetablePageGroup in getAgencyTimetableGroups(timetablePages, agencies)
-        h2= `${formatAgencyName(timetablePageGroup.agency)} Routes`
+        h1= `${formatAgencyName(timetablePageGroup.agency)} Routes`
         .timetable-pages
             each timetablePage in timetablePageGroup.timetablePages
                 a.timetable-page(href=`${timetablePage.relativePath}`)
