@@ -311,7 +311,7 @@ def write_calendar_file(file):
             })
 
 
-def write_shapes_file(file, output_json: dict):
+def write_shapes_file(file):
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "shape_id",
