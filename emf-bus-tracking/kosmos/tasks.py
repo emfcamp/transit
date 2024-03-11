@@ -10,7 +10,10 @@ KNOTS_TO_MS = 0.51444444444444
 KMH_TO_MS = 0.27777777777778
 
 
-@shared_task(ignore_result=True)
+@shared_task(
+    autoretry_for=(Exception,), retry_backoff=1, retry_backoff_max=60, max_retries=10, default_retry_delay=3,
+    ignore_result=True
+)
 def handle_kosmos_message(message: dict):
     imei = message["header"]["imei"]
     tracker = models.Tracker.objects.filter(imei=imei).first()

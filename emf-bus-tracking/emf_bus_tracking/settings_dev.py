@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "gtfs",
     "hafas",
     "kosmos",
+    "darwin",
     "tracking",
 ]
 
@@ -173,11 +174,19 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 with open(BASE_DIR / "secrets" / "os.json") as f:
     os_secrets = json.load(f)
+with open(BASE_DIR / "secrets" / "darwin.json") as f:
+    darwin_secrets = json.load(f)
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
 DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400
 
 OS_API_KEY = os_secrets["api_key"]
+
+DARWIN_MESSAGING_HOST = darwin_secrets["host"]
+DARWIN_MESSAGING_USERNAME = darwin_secrets["username"]
+DARWIN_MESSAGING_PASSWORD = darwin_secrets["password"]
+DARWIN_S3_ACCESS_KEY = darwin_secrets["s3_access_key"]
+DARWIN_S3_SECRET_KEY = darwin_secrets["s3_secret_key"]
 
 CACHES = {
     "default": {

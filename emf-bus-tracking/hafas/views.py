@@ -4,6 +4,8 @@ import secrets
 import dataclasses
 import traceback
 import datetime
+import uuid
+
 import xsdata.formats.dataclass.serializers.xml
 import xsdata.formats.dataclass.serializers.json
 from django.http import HttpResponse
@@ -44,6 +46,8 @@ def encode_json(obj):
                     out[field_name] = encode_json(value)
             elif field_type == "Attribute":
                 out[field_name] = value
+            else:
+                out["value"] = value
 
     return out
 
@@ -125,11 +129,18 @@ def hafas_request(wrapped):
 def departure_board(request_context: RequestContext) -> hafas_rest.CommonResponseType:
     now = timezone.now()
 
-    stop_id = request_context.request_data.get("id", None)
+    stop_id = request_context.request_data.pop("id", None)
     if not stop_id:
         return hafas_rest.CommonResponseType(
             error_code="400",
             error_text="Missing id",
+        )
+    try:
+        stop_id = uuid.UUID(stop_id)
+    except ValueError:
+        return hafas_rest.CommonResponseType(
+            error_code="400",
+            error_text=f"Invalid id: {stop_id}",
         )
     stop_obj = tracking.models.Stop.objects.filter(id=stop_id).first()
     if not stop_obj:
@@ -138,7 +149,7 @@ def departure_board(request_context: RequestContext) -> hafas_rest.CommonRespons
             error_text=f"Stop not found: {stop_id}",
         )
 
-    date = request_context.request_data.get("date", None)
+    date = request_context.request_data.pop("date", None)
     if not date:
         search_date = now.date()
     else:
@@ -150,7 +161,7 @@ def departure_board(request_context: RequestContext) -> hafas_rest.CommonRespons
                 error_text=f"Invalid date: {date}",
             )
 
-    time = request_context.request_data.get("time", None)
+    time = request_context.request_data.pop("time", None)
     if not time:
         search_time = now.time()
     else:
@@ -163,7 +174,7 @@ def departure_board(request_context: RequestContext) -> hafas_rest.CommonRespons
             )
 
     search_minutes = 60
-    if duration := request_context.request_data.get("duration", None):
+    if duration := request_context.request_data.pop("duration", None):
         try:
             search_minutes = max(int(duration), 1439)
         except ValueError:
@@ -173,11 +184,19 @@ def departure_board(request_context: RequestContext) -> hafas_rest.CommonRespons
             )
 
     search_lines = []
-    if lines := request_context.request_data.get("lines", None):
+    if lines := request_context.request_data.pop("lines", None):
         for line_id in lines.split(","):
             negative_search = False
             if line_id.startswith("!"):
                 negative_search = True
+
+            try:
+                line_id = uuid.UUID(line_id)
+            except ValueError:
+                return hafas_rest.CommonResponseType(
+                    error_code="400",
+                    error_text=f"Invalid id: {line_id}",
+                )
             line = tracking.models.Route.objects.filter(id=line_id).first()
             if not line:
                 return hafas_rest.CommonResponseType(

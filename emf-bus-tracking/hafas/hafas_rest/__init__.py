@@ -1,4 +1,4 @@
-from .rest_2_32 import (
+from hafas.hafas_rest.rest_2_32 import (
     AffectedStopType,
     ApplyToType,
     Arrival,

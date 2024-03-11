@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "gtfs",
     "hafas",
     "kosmos",
+    "darwin",
     "tracking",
 ]
 
@@ -154,6 +155,12 @@ OS_API_KEY = os.getenv("OS_API_KEY")
 
 KOSMOS_TARGET_ID = os.getenv("KOSMOS_TARGET_ID")
 KOSMOS_MAC_KEY = os.getenv("KOSMOS_MAC_KEY")
+
+DARWIN_MESSAGING_HOST = os.getenv("DARWIN_MESSAGING_HOST")
+DARWIN_MESSAGING_USERNAME = os.getenv("DARWIN_MESSAGING_USERNAME")
+DARWIN_MESSAGING_PASSWORD = os.getenv("DARWIN_MESSAGING_PASSWORD")
+DARWIN_S3_ACCESS_KEY = os.getenv("DARWIN_S3_ACCESS_KEY")
+DARWIN_S3_SECRET_KEY = os.getenv("DARWIN_S3_SECRET_KEY")
 
 CACHES = {
     "default": {
