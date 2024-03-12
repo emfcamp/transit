@@ -118,8 +118,8 @@ class Journey(models.Model):
 
 
 class JourneyStop(models.Model):
-    journey = models.ForeignKey(Journey, on_delete=models.CASCADE, related_name="stops")
-    location = models.ForeignKey(Location, on_delete=models.DO_NOTHING, db_constraint=False)
+    journey = models.ForeignKey(Journey, on_delete=models.CASCADE, related_name="stops", db_index=True)
+    location = models.ForeignKey(Location, on_delete=models.DO_NOTHING, db_constraint=False, db_index=True)
     order = models.IntegerField()
 
     origin = models.BooleanField(default=False, blank=True)
@@ -134,17 +134,17 @@ class JourneyStop(models.Model):
 
     supress = models.BooleanField(default=False, blank=True)
 
-    public_arrival = models.DateTimeField(blank=True, null=True)
-    public_departure = models.DateTimeField(blank=True, null=True)
+    public_arrival = models.DateTimeField(blank=True, null=True, db_index=True)
+    public_departure = models.DateTimeField(blank=True, null=True, db_index=True)
 
-    working_arrival = models.DateTimeField(blank=True, null=True)
-    working_departure = models.DateTimeField(blank=True, null=True)
+    working_arrival = models.DateTimeField(blank=True, null=True, db_index=True)
+    working_departure = models.DateTimeField(blank=True, null=True, db_index=True)
 
-    actual_arrival = models.DateTimeField(blank=True, null=True)
-    actual_departure = models.DateTimeField(blank=True, null=True)
+    actual_arrival = models.DateTimeField(blank=True, null=True, db_index=True)
+    actual_departure = models.DateTimeField(blank=True, null=True, db_index=True)
 
-    estimated_arrival = models.DateTimeField(blank=True, null=True)
-    estimated_departure = models.DateTimeField(blank=True, null=True)
+    estimated_arrival = models.DateTimeField(blank=True, null=True, db_index=True)
+    estimated_departure = models.DateTimeField(blank=True, null=True, db_index=True)
 
     unknown_delay_arrival = models.BooleanField(default=False, blank=True)
     unknown_delay_departure = models.BooleanField(default=False, blank=True)

@@ -12,7 +12,7 @@ from . import consts
 class Stop(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
     code = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, db_index=True)
     description = models.TextField(blank=True, null=True)
     latitude = models.FloatField()
     longitude = models.FloatField()
@@ -166,19 +166,25 @@ class Journey(models.Model):
 
 class JourneyPoint(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
-    journey = models.ForeignKey(Journey, on_delete=models.CASCADE, related_name="points")
-    stop = models.ForeignKey(Stop, on_delete=models.CASCADE, related_name="journey_points")
+    journey = models.ForeignKey(Journey, on_delete=models.CASCADE, related_name="points", db_index=True)
+    stop = models.ForeignKey(Stop, on_delete=models.CASCADE, related_name="journey_points", db_index=True)
     timing_point = models.BooleanField(default=True, blank=True)
     order = models.PositiveIntegerField(default=0, blank=True, null=False)
 
-    arrival_time = models.DateTimeField(blank=True, null=True, verbose_name="Scheduled arrival time (UTC)")
-    departure_time = models.DateTimeField(blank=True, null=True, verbose_name="Scheduled departure time (UTC)")
+    arrival_time = models.DateTimeField(
+        blank=True, null=True, verbose_name="Scheduled arrival time (UTC)", db_index=True)
+    departure_time = models.DateTimeField(
+        blank=True, null=True, verbose_name="Scheduled departure time (UTC)", db_index=True)
 
-    real_time_arrival = models.DateTimeField(blank=True, null=True, verbose_name="Real-time arrival time (UTC)")
-    real_time_departure = models.DateTimeField(blank=True, null=True, verbose_name="Real-time departure time (UTC)")
+    real_time_arrival = models.DateTimeField(
+        blank=True, null=True, verbose_name="Real-time arrival time (UTC)", db_index=True)
+    real_time_departure = models.DateTimeField(
+        blank=True, null=True, verbose_name="Real-time departure time (UTC)", db_index=True)
 
-    estimated_arrival = models.DateTimeField(blank=True, null=True, verbose_name="Estimated arrival time (UTC)")
-    estimated_departure = models.DateTimeField(blank=True, null=True, verbose_name="Estimated departure time (UTC)")
+    estimated_arrival = models.DateTimeField(
+        blank=True, null=True, verbose_name="Estimated arrival time (UTC)", db_index=True)
+    estimated_departure = models.DateTimeField(
+        blank=True, null=True, verbose_name="Estimated departure time (UTC)", db_index=True)
 
     def __str__(self):
         return (f"{self.journey.code} - {self.stop}: "
