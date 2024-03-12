@@ -46,6 +46,19 @@ def get_tiploc_filter() -> typing.Set[str]:
     return tiploc_filter
 
 
+def get_rid_filter() -> typing.Set[str]:
+    if rid_filter := cache.get("darwin_rid_filter"):
+        return rid_filter
+
+    rid_filter = set()
+    for journey in models.Journey.objects.all():
+        rid_filter.add(journey.rtti_unique_id)
+
+    cache.set("darwin_rid_filter", rid_filter, 60)
+
+    return rid_filter
+
+
 @shared_task(
     autoretry_for=(Exception,), retry_backoff=1, retry_backoff_max=60, max_retries=100, default_retry_delay=3,
     ignore_result=True
@@ -81,11 +94,13 @@ def process_darwin_message(
 
 def handle_data_response(data: push_port.rtti_pptschema_v16.DataResponse, timestamp: datetime.datetime):
     tiploc_filter = get_tiploc_filter()
+    rid_filter = get_rid_filter()
 
     for schedule in data.schedule:
         rid = handle_journey(schedule, tiploc_filter)
         if rid:
             logging.info(f"{timestamp} - new schedule: {rid}")
+            cache.delete("darwin_rid_filter")
 
     for station_message in data.ow:
         handle_station_message(station_message, timestamp)
@@ -94,7 +109,7 @@ def handle_data_response(data: push_port.rtti_pptschema_v16.DataResponse, timest
         handle_deactivated_journey(deactivated_schedule, timestamp)
 
     for train_status in data.ts:
-        handle_train_status(train_status, timestamp)
+        handle_train_status(train_status, rid_filter, timestamp)
 
 
 def handle_journey(
@@ -234,7 +249,14 @@ def handle_station_message(message: push_port.rtti_pptstation_messages_v1.Statio
             )
 
 
-def handle_train_status(status: push_port.rtti_pptforecasts_v3.Ts, timestamp: datetime.datetime):
+def handle_train_status(
+        status: push_port.rtti_pptforecasts_v3.Ts,
+        rid_filter: typing.Set[str],
+        timestamp: datetime.datetime
+):
+    if status.rid not in rid_filter:
+        return
+
     journey_obj: models.Journey = models.Journey.objects.filter(rtti_unique_id=status.rid).first()
     if not journey_obj:
         return
@@ -296,6 +318,8 @@ def download_tt_file(name: str):
             seen_rtti_unique_ids.add(rid)
 
     models.Journey.objects.filter(~Q(rtti_unique_id__in=seen_rtti_unique_ids)).delete()
+    cache.delete("darwin_rid_filter")
+
 
 @shared_task(
     autoretry_for=(Exception,), retry_backoff=1, retry_backoff_max=60, max_retries=100, default_retry_delay=3,
