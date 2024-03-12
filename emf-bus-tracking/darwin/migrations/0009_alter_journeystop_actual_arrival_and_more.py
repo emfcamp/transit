@@ -12,42 +12,50 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="actual_arrival"),
+        migrations.AddField(
             model_name="journeystop",
             name="actual_arrival",
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="actual_departure"),
+        migrations.AddField(
             model_name="journeystop",
             name="actual_departure",
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="estimated_arrival"),
+        migrations.AddField(
             model_name="journeystop",
             name="estimated_arrival",
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="estimated_departure"),
+        migrations.AddField(
             model_name="journeystop",
             name="estimated_departure",
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="public_arrival"),
+        migrations.AddField(
             model_name="journeystop",
             name="public_arrival",
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="public_departure"),
+        migrations.AddField(
             model_name="journeystop",
             name="public_departure",
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="working_arrival"),
+        migrations.AddField(
             model_name="journeystop",
             name="working_arrival",
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(model_name="journeystop", name="working_departure"),
+        migrations.AddField(
             model_name="journeystop",
             name="working_departure",
             field=models.DateTimeField(blank=True, null=True),
