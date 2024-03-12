@@ -125,7 +125,7 @@ def handle_journey(
             uid=journey.uid,
             headcode=journey.train_id,
             toc_id=journey.toc,
-            activated=not getattr(journey, 'qtrain', False),
+            activated=journey.is_active if hasattr(journey, 'is_active') else (not getattr(journey, 'qtrain', False)),
         )
         journey_obj.stops.all().delete()
 
