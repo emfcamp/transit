@@ -106,7 +106,7 @@ def handle_data_response(data: push_port.rtti_pptschema_v16.DataResponse, timest
         handle_station_message(station_message, timestamp)
 
     for deactivated_schedule in data.deactivated:
-        handle_deactivated_journey(deactivated_schedule, timestamp)
+        handle_deactivated_journey(deactivated_schedule, rid_filter, timestamp)
 
     for train_status in data.ts:
         handle_train_status(train_status, rid_filter, timestamp)
@@ -139,14 +139,16 @@ def handle_journey(
     with transaction.atomic():
         journey_obj, _ = models.Journey.objects.update_or_create(
             rtti_unique_id=journey.rid,
-            date=ssd,
-            cancel_reason_id=journey.cancel_reason.value if journey.cancel_reason else None,
-            cancel_location_id=journey.cancel_reason.tiploc if journey.cancel_reason else None,
-            cancel_reason_near=journey.cancel_reason.near if journey.cancel_reason else False,
-            uid=journey.uid,
-            headcode=journey.train_id,
-            toc_id=journey.toc,
-            activated=journey.is_active if hasattr(journey, 'is_active') else (not getattr(journey, 'qtrain', False)),
+            defaults={
+                "date": ssd,
+                "cancel_reason_id": journey.cancel_reason.value if journey.cancel_reason else None,
+                "cancel_location_id": journey.cancel_reason.tiploc if journey.cancel_reason else None,
+                "cancel_reason_near": journey.cancel_reason.near if journey.cancel_reason else False,
+                "uid": journey.uid,
+                "headcode": journey.train_id,
+                "toc_id": journey.toc,
+                "activated": journey.is_active if hasattr(journey, 'is_active') else (not getattr(journey, 'qtrain', False)),
+            }
         )
         journey_obj.stops.all().delete()
 
@@ -206,8 +208,13 @@ def handle_journey(
 
 
 def handle_deactivated_journey(
-        journey: push_port.rtti_pptschedules_v2.DeactivatedSchedule,  timestamp: datetime.datetime
+        journey: push_port.rtti_pptschedules_v2.DeactivatedSchedule,
+        rid_filter: typing.Set[str],
+        timestamp: datetime.datetime
 ):
+    if journey.rid not in rid_filter:
+        return
+
     journey_obj: models.Journey = models.Journey.objects.filter(rtti_unique_id=journey.rid).first()
     if not journey_obj:
         return
@@ -235,10 +242,12 @@ def handle_station_message(message: push_port.rtti_pptstation_messages_v1.Statio
     with transaction.atomic():
         message_obj, _ = models.Message.objects.update_or_create(
             message_id=message.id,
-            message=str(message.msg),
-            category=message.cat.value,
-            severity=message.sev.value,
-            supress_rtt=message.suppress,
+            defaults={
+                "message": str(message.msg),
+                "category": message.cat.value,
+                "severity": message.sev.value,
+                "supress_rtt": message.suppress,
+            }
         )
         message_obj.stations.all().delete()
 
