@@ -10,6 +10,7 @@ from celery import shared_task
 from django.conf import settings
 from django.db.models import Q
 from django.db import transaction
+from django.core.cache import cache
 from . import push_port, models
 
 TT_BUCKET = "darwin.xmltimetable"
@@ -32,10 +33,15 @@ def get_s3_client():
 
 
 def get_tiploc_filter() -> typing.Set[str]:
+    if tiploc_filter := cache.get("darwin_tiploc_filter"):
+        return tiploc_filter
+
     tiploc_filter = set()
     for loc in models.MonitoredStation.objects.all():
         if location := loc.location():
             tiploc_filter.add(location.tiploc)
+
+    cache.set("darwin_tiploc_filter", tiploc_filter, 60)
 
     return tiploc_filter
 
