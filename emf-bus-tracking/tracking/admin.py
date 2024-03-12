@@ -3,7 +3,6 @@ import xml.etree.ElementTree
 import celery.result
 from django.contrib import admin
 from adminsortable2.admin import SortableAdminMixin, SortableInlineAdminMixin, SortableAdminBase
-from django.core.checks import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import redirect, get_object_or_404
@@ -58,7 +57,7 @@ class JourneyAdmin(SortableAdminBase, admin.ModelAdmin):
 @admin.register(models.Shape)
 class ShapeAdmin(SortableAdminBase, admin.ModelAdmin):
     readonly_fields = ["last_average_speed_update"]
-    change_list_template = "tracking/shape_changelist.html"
+    change_list_template = "tracking/monitored_station_changelist.html"
     change_form_template = "tracking/shape_change.html"
 
     def save_model(self, request, obj, form, change):

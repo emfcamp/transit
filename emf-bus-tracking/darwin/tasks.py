@@ -371,6 +371,36 @@ def download_tt_ref_file(name: str):
             )
 
 
+@shared_task(
+    autoretry_for=(Exception,), retry_backoff=1, retry_backoff_max=60, max_retries=100, default_retry_delay=3,
+    ignore_result=True
+)
+def sync_tt_files():
+    s3_client = get_s3_client()
+
+    files = s3_client.list_objects_v2(Bucket=TT_BUCKET, Prefix=FILE_PREFIX)
+
+    tt = []
+    tt_ref = []
+    for file in files["Contents"]:
+        file_name = file["Key"].removeprefix(FILE_PREFIX)
+        if match := TT_RE.match(file_name):
+            tt.append(((int(match["year"]), int(match["month"]), int(match["day"])), file_name))
+        elif match := TT_REF_RE.match(file_name):
+            tt_ref.append(((int(match["year"]), int(match["month"]), int(match["day"])), file_name))
+
+    tt.sort(reverse=True, key=lambda x: x[0])
+    tt_ref.sort(reverse=True, key=lambda x: x[0])
+
+    latest_tt = tt[0][1] if tt else None
+    latest_tt_ref = tt_ref[0][1] if tt_ref else None
+
+    if latest_tt:
+        download_tt_file.delay(latest_tt)
+    if latest_tt_ref:
+        download_tt_ref_file.delay(latest_tt_ref)
+
+
 def get_tt_file(name: str, data_type):
     s3_client = get_s3_client()
     s3_object = s3_client.get_object(Bucket=TT_BUCKET, Key=f"{FILE_PREFIX}{name}")

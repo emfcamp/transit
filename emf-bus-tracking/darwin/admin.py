@@ -1,5 +1,9 @@
 from django.contrib import admin
-from . import models
+from django.core.checks import messages
+from django.shortcuts import redirect
+from django.urls import path
+from django.contrib import messages
+from . import models, tasks
 
 
 @admin.register(models.TrainOperatingCompany)
@@ -115,3 +119,18 @@ class MonitoredStationAdmin(admin.ModelAdmin):
     list_display = ("crs", "location")
     search_fields = ("crs",)
     ordering = ("crs",)
+
+    change_list_template = "darwin/monitored_station_changelist.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        urls = [
+            path("darwin_sync/", self.admin_site.admin_view(self.darwin_sync), name="darwin_monitoredstation_darwin-sync"),
+        ] + urls
+        return urls
+
+    @staticmethod
+    def darwin_sync(request):
+        tasks.sync_tt_files.delay()
+        messages.add_message(request, messages.INFO, "Darwin sync scheduled")
+        return redirect("admin:darwin_monitoredstation_changelist")
