@@ -16,6 +16,8 @@ from . import models, os_average_speed
 
 @admin.register(models.Stop)
 class StopAdmin(admin.ModelAdmin):
+    readonly_fields = ("id",)
+
     def save_model(self, request, obj: models.Stop, form, change):
         super().save_model(request, obj, form, change)
         if not obj.internal:

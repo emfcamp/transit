@@ -44,11 +44,11 @@ class Command(BaseCommand, stomp.ConnectionListener):
             passcode=settings.DARWIN_MESSAGING_PASSWORD,
             wait=True,
             **{
-                "client-id": f"{settings.DARWIN_MESSAGING_USERNAME}_emf-bus-tracking"
+                "client-id": f"{settings.DARWIN_MESSAGING_USERNAME}_emf-bus-tracking_{settings.DARWIN_CLIENT_ID}"
             }
         )
         self.connection.subscribe("/topic/darwin.pushport-v16", id="1", ack="client-individual", **{
-            "activemq.subscriptionName": "emf-bus-tracking",
+            "activemq.subscriptionName": f"emf-bus-tracking_{settings.DARWIN_CLIENT_ID}",
         })
         logging.info("STOMP connected")
 

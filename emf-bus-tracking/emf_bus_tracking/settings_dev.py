@@ -185,6 +185,7 @@ OS_API_KEY = os_secrets["api_key"]
 DARWIN_MESSAGING_HOST = darwin_secrets["host"]
 DARWIN_MESSAGING_USERNAME = darwin_secrets["username"]
 DARWIN_MESSAGING_PASSWORD = darwin_secrets["password"]
+DARWIN_CLIENT_ID = darwin_secrets["client_id"]
 DARWIN_S3_ACCESS_KEY = darwin_secrets["s3_access_key"]
 DARWIN_S3_SECRET_KEY = darwin_secrets["s3_secret_key"]
 

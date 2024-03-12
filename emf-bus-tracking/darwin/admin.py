@@ -114,6 +114,29 @@ class MessageAdmin(admin.ModelAdmin):
         return False
 
 
+@admin.register(models.WelshStationName)
+class WelshStationNameAdmin(admin.ModelAdmin):
+    list_display = ("crs", "name")
+    search_fields = ("crs", "name")
+    ordering = ("crs",)
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(models.WelshTrainOperatingCompanyName)
+class WelshTrainOperatingCompanyNameAdmin(admin.ModelAdmin):
+    list_display = ("toc", "name")
+    search_fields = ("toc", "name")
+    ordering = ("toc",)
+
+
 @admin.register(models.MonitoredStation)
 class MonitoredStationAdmin(admin.ModelAdmin):
     list_display = ("crs", "location")

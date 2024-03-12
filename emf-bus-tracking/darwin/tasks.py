@@ -1,8 +1,9 @@
 import datetime
 import logging
 import typing
-
+import pytz
 import boto3
+import requests
 import re
 import gzip
 import xsdata.formats.dataclass.parsers
@@ -17,6 +18,9 @@ TT_BUCKET = "darwin.xmltimetable"
 FILE_PREFIX = "PPTimetable/"
 TT_RE = re.compile(r"^(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(\d{6})_v8.xml.gz$")
 TT_REF_RE = re.compile(r"^(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(\d{6})_ref_v3.xml.gz$")
+TIMEZONE = pytz.timezone("Europe/London")
+
+WELSH_STATION_NAME_FEED = "http://datafeeds.rdg.s3.amazonaws.com/RSPS5052/WelshStationNames02-00.json"
 
 
 dict_decoder = xsdata.formats.dataclass.parsers.DictDecoder()
@@ -84,6 +88,7 @@ def process_darwin_message(
             logging.info(f"{timestamp} - new timetable reference file: {tt_ref_file}")
             if TT_REF_RE.match(tt_ref_file):
                 download_tt_ref_file.delay(tt_ref_file)
+                sync_welsh_station_names.delay()
 
     if message.s_r:
         handle_data_response(message.s_r, timestamp)
@@ -112,11 +117,27 @@ def handle_data_response(data: push_port.rtti_pptschema_v16.DataResponse, timest
         handle_train_status(train_status, rid_filter, timestamp)
 
 
+def handle_timestamp(
+        time_str: typing.Optional[str], last_timestamp: datetime.datetime
+) -> typing.Tuple[typing.Optional[datetime.datetime], datetime.datetime]:
+    if time_str:
+        if len(time_str) == 5:
+            time_obj = datetime.datetime.strptime(time_str, "%H:%M").time()
+        elif len(time_str) == 8:
+            time_obj = datetime.datetime.strptime(time_str, "%H:%M:%S").time()
+        timestamp = datetime.datetime.combine(last_timestamp.date(), time_obj, tzinfo=TIMEZONE)
+        while timestamp < last_timestamp:
+            timestamp += datetime.timedelta(days=1)
+        return timestamp, timestamp
+    else:
+        return None, last_timestamp
+
+
 def handle_journey(
         journey: typing.Union[push_port.rtti_cttschema_v8.PportTimetable, push_port.rtti_pptschedules_v3.Schedule],
         tiploc_filter: typing.Set[str],
 ) -> typing.Optional[str]:
-    if not journey.is_passenger_svc or journey.deleted:
+    if journey.deleted:
         return
 
     calling_tiplocs = set()
@@ -148,22 +169,33 @@ def handle_journey(
                 "headcode": journey.train_id,
                 "toc_id": journey.toc,
                 "activated": journey.is_active if hasattr(journey, 'is_active') else (not getattr(journey, 'qtrain', False)),
+                "category": journey.train_cat,
             }
         )
         journey_obj.stops.all().delete()
 
+        last_public_timestamp = datetime.datetime.combine(
+            ssd, datetime.time(0, 0, 0), tzinfo=TIMEZONE)
+        last_working_timestamp = datetime.datetime.combine(
+            ssd, datetime.time(0, 0, 0), tzinfo=TIMEZONE)
+
         order = 1
         for op in journey.or_value:
+            public_arrival, last_public_timestamp = handle_timestamp(op.pta, last_public_timestamp)
+            working_arrival, last_working_timestamp = handle_timestamp(op.wta, last_working_timestamp)
+            public_departure, last_public_timestamp = handle_timestamp(op.ptd, last_public_timestamp)
+            working_departure, last_working_timestamp = handle_timestamp(op.wtd, last_working_timestamp)
+
             models.JourneyStop.objects.create(
                 journey=journey_obj,
                 location_id=op.tpl,
                 order=order,
-                canceled=op.can,
+                cancelled=op.can,
                 planned_platform=getattr(op, 'plat', None),
-                public_arrival=op.pta,
-                public_departure=op.ptd,
-                working_arrival=op.wta,
-                working_departure=op.wtd,
+                public_arrival=public_arrival.astimezone(datetime.UTC) if public_arrival else None,
+                public_departure=public_departure.astimezone(datetime.UTC) if public_departure else None,
+                working_arrival=working_arrival.astimezone(datetime.UTC) if working_arrival else None,
+                working_departure=working_departure.astimezone(datetime.UTC) if working_departure else None,
                 use_false_destination=op.fd or False,
                 origin=True,
                 destination=False,
@@ -171,16 +203,21 @@ def handle_journey(
             order += 1
 
         for ip in journey.ip:
+            public_arrival, last_public_timestamp = handle_timestamp(ip.pta, last_public_timestamp)
+            working_arrival, last_working_timestamp = handle_timestamp(ip.wta, last_working_timestamp)
+            public_departure, last_public_timestamp = handle_timestamp(ip.ptd, last_public_timestamp)
+            working_departure, last_working_timestamp = handle_timestamp(ip.wtd, last_working_timestamp)
+
             models.JourneyStop.objects.create(
                 journey=journey_obj,
                 location_id=ip.tpl,
                 order=order,
-                canceled=ip.can,
+                cancelled=ip.can,
                 planned_platform=getattr(ip, 'plat', None),
-                public_arrival=ip.pta,
-                public_departure=ip.ptd,
-                working_arrival=ip.wta,
-                working_departure=ip.wtd,
+                public_arrival=public_arrival.astimezone(datetime.UTC) if public_arrival else None,
+                public_departure=public_departure.astimezone(datetime.UTC) if public_departure else None,
+                working_arrival=working_arrival.astimezone(datetime.UTC) if working_arrival else None,
+                working_departure=working_departure.astimezone(datetime.UTC) if working_departure else None,
                 use_false_destination=ip.fd or False,
                 origin=False,
                 destination=False,
@@ -188,16 +225,21 @@ def handle_journey(
             order += 1
 
         for dp in journey.dt:
+            public_arrival, last_public_timestamp = handle_timestamp(dp.pta, last_public_timestamp)
+            working_arrival, last_working_timestamp = handle_timestamp(dp.wta, last_working_timestamp)
+            public_departure, last_public_timestamp = handle_timestamp(dp.ptd, last_public_timestamp)
+            working_departure, last_working_timestamp = handle_timestamp(dp.wtd, last_working_timestamp)
+
             models.JourneyStop.objects.create(
                 journey=journey_obj,
                 location_id=dp.tpl,
                 order=order,
-                canceled=dp.can,
+                cancelled=dp.can,
                 planned_platform=getattr(dp, 'plat', None),
-                public_arrival=dp.pta,
-                public_departure=dp.ptd,
-                working_arrival=dp.wta,
-                working_departure=dp.wtd,
+                public_arrival=public_arrival.astimezone(datetime.UTC) if public_arrival else None,
+                public_departure=public_departure.astimezone(datetime.UTC) if public_departure else None,
+                working_arrival=working_arrival.astimezone(datetime.UTC) if working_arrival else None,
+                working_departure=working_departure.astimezone(datetime.UTC) if working_departure else None,
                 use_false_destination=False,
                 origin=False,
                 destination=True,
@@ -291,20 +333,36 @@ def handle_train_status(
                 journey_stop.platform_confirmed = location.plat.conf
 
             if location.arr:
+                date = journey_stop.working_arrival.date() if journey_stop.working_arrival else \
+                    journey_stop.public_arrival.date() if journey_stop.public_arrival else \
+                    journey_obj.date
+
                 if location.arr.at:
-                    journey_stop.actual_arrival = datetime.datetime.strptime(location.arr.at, "%H:%M").time()
+                    time_obj = datetime.datetime.strptime(location.arr.at, "%H:%M").time()
+                    journey_stop.actual_arrival = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                        .astimezone(datetime.UTC)
                 if location.arr.at_removed:
                     journey_stop.actual_arrival = None
                 if location.arr.et:
-                    journey_stop.estimated_arrival = datetime.datetime.strptime(location.arr.et, "%H:%M").time()
+                    time_obj = datetime.datetime.strptime(location.arr.et, "%H:%M").time()
+                    journey_stop.estimated_arrival = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                        .astimezone(datetime.UTC)
                 journey_stop.unknown_delay_arrival = location.arr.delayed or False
             if location.dep:
+                date = journey_stop.working_departure.date() if journey_stop.working_departure else \
+                    journey_stop.public_departure.date() if journey_stop.public_departure else \
+                    journey_obj.date
+
                 if location.dep.at:
-                    journey_stop.actual_departure = datetime.datetime.strptime(location.dep.at, "%H:%M").time()
+                    time_obj = datetime.datetime.strptime(location.dep.at, "%H:%M").time()
+                    journey_stop.actual_departure = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                        .astimezone(datetime.UTC)
                 if location.dep.at_removed:
                     journey_stop.actual_departure = None
                 if location.dep.et:
-                    journey_stop.estimated_departure = datetime.datetime.strptime(location.dep.et, "%H:%M").time()
+                    time_obj = datetime.datetime.strptime(location.dep.et, "%H:%M").time()
+                    journey_stop.estimated_departure = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                        .astimezone(datetime.UTC)
                 journey_stop.unknown_delay_departure = location.dep.delayed or False
 
             journey_stop.save()
@@ -400,6 +458,8 @@ def sync_tt_files():
     if latest_tt_ref:
         download_tt_ref_file.delay(latest_tt_ref)
 
+    sync_welsh_station_names.delay()
+
 
 def get_tt_file(name: str, data_type):
     s3_client = get_s3_client()
@@ -409,3 +469,24 @@ def get_tt_file(name: str, data_type):
     tt = xml_parser.from_string(tt_str, data_type)
 
     return tt
+
+
+@shared_task(
+    autoretry_for=(Exception,), retry_backoff=1, retry_backoff_max=60, max_retries=100, default_retry_delay=3,
+    ignore_result=True
+)
+def sync_welsh_station_names():
+    res = requests.get(WELSH_STATION_NAME_FEED)
+    res.raise_for_status()
+    data = res.json()
+
+    station_names = data["welshNamesDateRanges"][0]["welshNames"]
+
+    with transaction.atomic():
+        models.WelshStationName.objects.all().delete()
+        for station in station_names:
+            if "crs" in station:
+                models.WelshStationName.objects.create(
+                    crs=station["crs"],
+                    name=station["description"],
+                )

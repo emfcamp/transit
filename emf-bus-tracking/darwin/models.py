@@ -1,4 +1,6 @@
 from django.db import models
+import tracking.models
+import tracking.consts
 
 
 class TrainOperatingCompany(models.Model):
@@ -70,8 +72,49 @@ class Journey(models.Model):
         verbose_name="Train Operating Company")
     activated = models.BooleanField(default=True, blank=True)
 
+    category = models.CharField(max_length=2, blank=True, null=True)
+
     def __str__(self):
         return f"{self.date} - {self.headcode}"
+
+    def map_service_category(self):
+        if self.category == "OL":
+            return tracking.consts.ServiceCategory.METRO
+        elif self.category == "OU":
+            return tracking.consts.ServiceCategory.UNADVERTISED_ORDINARY_PASSENGER
+        elif self.category == "OO":
+            return tracking.consts.ServiceCategory.ORDINARY_PASSENGER
+        elif self.category == "OS":
+            return tracking.consts.ServiceCategory.STAFF_TRAIN
+        elif self.category == "OW":
+            return tracking.consts.ServiceCategory.MIXED
+        elif self.category == "XC":
+            return tracking.consts.ServiceCategory.CHANNEL_TUNNEL
+        elif self.category == "XD":
+            return tracking.consts.ServiceCategory.INTERNATIONAL_SLEEPER
+        elif self.category == "XI":
+            return tracking.consts.ServiceCategory.INTERNATIONAL
+        elif self.category == "XR":
+            return tracking.consts.ServiceCategory.MOTORAIL
+        elif self.category == "XU":
+            return tracking.consts.ServiceCategory.UNADVERTISED_EXPRESS_PASSENGER
+        elif self.category == "XX":
+            return tracking.consts.ServiceCategory.EXPRESS_PASSENGER
+        elif self.category == "XZ":
+            return tracking.consts.ServiceCategory.DOMESTIC_SLEEPER
+        elif self.category == "BR":
+            return tracking.consts.ServiceCategory.REPLACEMENT_BUS
+        elif self.category == "BS":
+            return tracking.consts.ServiceCategory.BUS
+        elif self.category == "SS":
+            return tracking.consts.ServiceCategory.SHIP
+        elif self.category == "EE":
+            return tracking.consts.ServiceCategory.EMPTY_COACHING_STOCK
+        elif self.category == "EM":
+            return tracking.consts.ServiceCategory.METRO_EMPTY_COACHING_STOCK
+        elif self.category == "ES":
+            return tracking.consts.ServiceCategory.STAFF_EMPTY_COACHING_STOCK
+        return None
 
 
 class JourneyStop(models.Model):
@@ -82,7 +125,7 @@ class JourneyStop(models.Model):
     origin = models.BooleanField(default=False, blank=True)
     destination = models.BooleanField(default=False, blank=True)
 
-    canceled = models.BooleanField(default=False, blank=True)
+    cancelled = models.BooleanField(default=False, blank=True)
 
     planned_platform = models.CharField(max_length=3, blank=True, null=True)
     current_platform = models.CharField(max_length=3, blank=True, null=True)
@@ -91,17 +134,17 @@ class JourneyStop(models.Model):
 
     supress = models.BooleanField(default=False, blank=True)
 
-    public_arrival = models.TimeField(blank=True, null=True)
-    public_departure = models.TimeField(blank=True, null=True)
+    public_arrival = models.DateTimeField(blank=True, null=True)
+    public_departure = models.DateTimeField(blank=True, null=True)
 
-    working_arrival = models.TimeField(blank=True, null=True)
-    working_departure = models.TimeField(blank=True, null=True)
+    working_arrival = models.DateTimeField(blank=True, null=True)
+    working_departure = models.DateTimeField(blank=True, null=True)
 
-    actual_arrival = models.TimeField(blank=True, null=True)
-    actual_departure = models.TimeField(blank=True, null=True)
+    actual_arrival = models.DateTimeField(blank=True, null=True)
+    actual_departure = models.DateTimeField(blank=True, null=True)
 
-    estimated_arrival = models.TimeField(blank=True, null=True)
-    estimated_departure = models.TimeField(blank=True, null=True)
+    estimated_arrival = models.DateTimeField(blank=True, null=True)
+    estimated_departure = models.DateTimeField(blank=True, null=True)
 
     unknown_delay_arrival = models.BooleanField(default=False, blank=True)
     unknown_delay_departure = models.BooleanField(default=False, blank=True)
@@ -135,8 +178,26 @@ class MessageStation(models.Model):
         return f"{self.message} - {self.crs}"
 
 
+class WelshStationName(models.Model):
+    crs = models.CharField(max_length=3, primary_key=True)
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.crs} - {self.name}"
+
+
+class WelshTrainOperatingCompanyName(models.Model):
+    toc = models.ForeignKey(TrainOperatingCompany, on_delete=models.DO_NOTHING, primary_key=True, db_constraint=False)
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.toc} - {self.name}"
+
+
 class MonitoredStation(models.Model):
     crs = models.CharField(max_length=3, verbose_name="CRS code (station identifier)")
+    linked_stop = models.ForeignKey(
+        tracking.models.Stop, on_delete=models.SET_NULL, blank=True, null=True, related_name="darwin_link")
 
     def location(self):
         return Location.objects.filter(crs=self.crs).first()
