@@ -54,4 +54,11 @@ but its the same one used by Deutsche Bahn and other European rail operators.
 Message Q ([magicalcodewit.ch](https://magicalcodewit.ch)) if you have questions 
 about our specific implementation.
 
-HAFAS base URL: `https://tracking.tfemf.uk/hafas` (not yet active)
+HAFAS base URL: `https://tracking.tfemf.uk/hafas`  
+No API key is required.
+
+Available endpoints:
+
+* `location.name`
+* `arrivalBoard`
+* `departureBoard`
