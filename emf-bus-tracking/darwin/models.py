@@ -187,7 +187,8 @@ class WelshStationName(models.Model):
 
 
 class WelshTrainOperatingCompanyName(models.Model):
-    toc = models.ForeignKey(TrainOperatingCompany, on_delete=models.DO_NOTHING, primary_key=True, db_constraint=False)
+    toc = models.OneToOneField(
+        TrainOperatingCompany, on_delete=models.DO_NOTHING, primary_key=True, db_constraint=False)
     name = models.CharField(max_length=255)
 
     def __str__(self):
@@ -197,7 +198,8 @@ class WelshTrainOperatingCompanyName(models.Model):
 class MonitoredStation(models.Model):
     crs = models.CharField(max_length=3, verbose_name="CRS code (station identifier)")
     linked_stop = models.ForeignKey(
-        tracking.models.Stop, on_delete=models.SET_NULL, blank=True, null=True, related_name="darwin_link")
+        tracking.models.Stop, on_delete=models.SET_NULL, blank=True, null=True, related_name="darwin_link",
+        db_constraint=False)
 
     def location(self):
         return Location.objects.filter(crs=self.crs).first()

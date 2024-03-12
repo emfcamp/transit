@@ -267,6 +267,9 @@ def departure_board(request_context: RequestContext) -> hafas_rest.CommonRespons
             list(filter(filter_journey_stop, relevant_journey_stops))
 
         for journey_stop in relevant_journey_stops:
+            if not journey_stop.public_departure:
+                continue
+                
             rt_departure = journey_stop.actual_departure or journey_stop.estimated_departure or None
             part_cancelled = any(s.cancelled for s in journey_stop.journey.stops.all())
             destination_stop: typing.Optional[darwin.models.JourneyStop] = \
