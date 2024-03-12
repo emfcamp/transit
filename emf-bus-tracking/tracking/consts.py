@@ -27,6 +27,7 @@ class ServiceCategory(enum.Enum):
     REPLACEMENT_BUS = "replacement_bus"
     BUS = "bus"
     SHIP = "ship"
+    TRAM = "tram"
 
     EMPTY_COACHING_STOCK = "empty_coaching_stock"
     METRO_EMPTY_COACHING_STOCK = "metro_empty_coaching_stock"
@@ -63,6 +64,8 @@ class ServiceCategory(enum.Enum):
             return "Bus"
         elif self == ServiceCategory.SHIP:
             return "Ship"
+        elif self == ServiceCategory.TRAM:
+            return "Tram"
         elif self == ServiceCategory.EMPTY_COACHING_STOCK:
             return "Empty Coaching Stock"
         elif self == ServiceCategory.METRO_EMPTY_COACHING_STOCK:

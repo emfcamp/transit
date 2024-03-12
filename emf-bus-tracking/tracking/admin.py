@@ -48,6 +48,7 @@ class JourneyPointAdmin(SortableInlineAdminMixin, admin.TabularInline):
 @admin.register(models.Journey)
 class JourneyAdmin(SortableAdminBase, admin.ModelAdmin):
     inlines = [JourneyPointAdmin]
+    list_display = ("code", "route", "start_date")
 
     def save_model(self, request, obj: models.Journey, form, change):
         super().save_model(request, obj, form, change)

@@ -4,7 +4,9 @@ from colorfield.fields import ColorField
 from django.core.exceptions import ObjectDoesNotExist
 from gtfs.gtfs_rt import gtfs_realtime_pb2
 import uuid
+import datetime
 import typing
+from . import consts
 
 
 class Stop(models.Model):
@@ -64,6 +66,20 @@ class Route(models.Model):
     class Meta:
         ordering = ['order']
 
+    def service_category(self):
+        if self.type == self.TYPE_TRAM:
+            return consts.ServiceCategory.TRAM
+        elif self.type == self.TYPE_SUBWAY:
+            return consts.ServiceCategory.METRO
+        elif self.type == self.TYPE_RAIL:
+            return consts.ServiceCategory.ORDINARY_PASSENGER
+        elif self.type == self.TYPE_BUS:
+            return consts.ServiceCategory.BUS
+        elif self.type == self.TYPE_FERRY:
+            return consts.ServiceCategory.SHIP
+        else:
+            return consts.ServiceCategory.MIXED
+
 
 class Vehicle(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
@@ -116,7 +132,6 @@ class Journey(models.Model):
     code = models.CharField(max_length=255)
     route = models.ForeignKey(Route, on_delete=models.SET_NULL, blank=True, null=True)
     direction = models.PositiveSmallIntegerField(choices=DIRECTIONS, blank=True, null=True)
-    date = models.DateField()
     public = models.BooleanField(default=True, blank=True)
     vehicle = models.ForeignKey(Vehicle, on_delete=models.SET_NULL, blank=True, null=True, related_name="journeys")
     forms_from = models.OneToOneField(
@@ -128,13 +143,12 @@ class Journey(models.Model):
 
     def __str__(self):
         if self.route:
-            return f"{self.code} ({self.route}) - {self.date} - {self.get_direction_display()}"
+            return f"{self.code} ({self.route}) - {self.start_date()} - {self.get_direction_display()}"
 
-        return f"{self.code} - {self.date}"
+        return f"{self.code} - {self.start_date()}"
 
     class Meta:
-        ordering = ['date', 'code']
-        unique_together = ['code', 'date']
+        ordering = ['code']
 
     def forms_into_opt(self) -> typing.Optional["Journey"]:
         try:
@@ -142,24 +156,34 @@ class Journey(models.Model):
         except ObjectDoesNotExist:
             return None
 
+    def start_date(self) -> typing.Optional[datetime.date]:
+        start_point = self.points.order_by('order').first()
+        if not start_point:
+            return None
+        return start_point.arrival_time.date() if start_point.arrival_time else (
+            start_point.departure_time.date() if start_point.departure_time else None)
+
 
 class JourneyPoint(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
     journey = models.ForeignKey(Journey, on_delete=models.CASCADE, related_name="points")
-    stop = models.ForeignKey(Stop, on_delete=models.CASCADE)
-    arrival_time = models.TimeField(blank=True, null=True)
-    departure_time = models.TimeField(blank=True, null=True)
+    stop = models.ForeignKey(Stop, on_delete=models.CASCADE, related_name="journey_points")
     timing_point = models.BooleanField(default=True, blank=True)
     order = models.PositiveIntegerField(default=0, blank=True, null=False)
 
-    real_time_arrival = models.TimeField(blank=True, null=True)
-    real_time_departure = models.TimeField(blank=True, null=True)
+    arrival_time = models.DateTimeField(blank=True, null=True, verbose_name="Scheduled arrival time (UTC)")
+    departure_time = models.DateTimeField(blank=True, null=True, verbose_name="Scheduled departure time (UTC)")
 
-    estimated_arrival = models.TimeField(blank=True, null=True)
-    estimated_departure = models.TimeField(blank=True, null=True)
+    real_time_arrival = models.DateTimeField(blank=True, null=True, verbose_name="Real-time arrival time (UTC)")
+    real_time_departure = models.DateTimeField(blank=True, null=True, verbose_name="Real-time departure time (UTC)")
+
+    estimated_arrival = models.DateTimeField(blank=True, null=True, verbose_name="Estimated arrival time (UTC)")
+    estimated_departure = models.DateTimeField(blank=True, null=True, verbose_name="Estimated departure time (UTC)")
 
     def __str__(self):
-        return f"{self.journey.code} - {self.stop}: arr {self.arrival_time or 'X'} dep {self.departure_time or 'X'}"
+        return (f"{self.journey.code} - {self.stop}: "
+                f"arr {self.arrival_time.time() if self.arrival_time else 'X'} "
+                f"dep {self.departure_time.time() if self.departure_time else 'X'}")
 
     class Meta:
         ordering = ['order']

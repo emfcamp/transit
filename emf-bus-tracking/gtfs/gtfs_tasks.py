@@ -82,10 +82,10 @@ def generate_schedule_html():
 
 def write_agency_file(file, output_json: dict):
     data = {
-        "agency_id": settings.GTFS_CONFIG["agency"]["id"],
-        "agency_name": settings.GTFS_CONFIG["agency"]["name"],
-        "agency_url": settings.GTFS_CONFIG["agency"]["url"],
-        "agency_timezone": settings.GTFS_CONFIG["agency"]["timezone"],
+        "agency_id": settings.TRANSIT_CONFIG["agency_id"],
+        "agency_name": settings.TRANSIT_CONFIG["agency_name"],
+        "agency_url": settings.TRANSIT_CONFIG["agency_url"],
+        "agency_timezone": "UTC",
         "agency_lang": settings.GTFS_CONFIG["agency"]["lang"] or "",
         "agency_phone": settings.GTFS_CONFIG["agency"]["phone"] or "",
         "agency_fare_url": settings.GTFS_CONFIG["agency"]["fare_url"] or "",

@@ -16,7 +16,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/emf-bus-tracking" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11 (tfemf)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 (tfemf)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">
@@ -28,6 +28,7 @@
     <option name="TEMPLATE_FOLDERS">
       <list>
         <option value="$MODULE_DIR$/emf-bus-tracking/tracking/templates" />
+        <option value="$MODULE_DIR$/emf-bus-tracking/darwin/templates" />
       </list>
     </option>
   </component>

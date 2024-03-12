@@ -144,12 +144,14 @@ CELERY_BEAT_SCHEDULE = {
     }
 }
 
+TRANSIT_CONFIG = {
+    "agency_id": "EMF",
+    "agency_name": "Electromagnetic Field",
+    "agency_url": "https://bus.emf.camp",
+}
+
 GTFS_CONFIG = {
     "agency": {
-        "id": "EMF",
-        "name": "Electromagnetic Field",
-        "url": "https://bus.emf.camp",
-        "timezone": "Europe/London",
         "lang": "en",
         "phone": None,
         "fare_url": None,
