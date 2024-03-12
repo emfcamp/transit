@@ -9,6 +9,10 @@ class TrainOperatingCompany(models.Model):
     def __str__(self):
         return f"{self.code} - {self.name}"
 
+    class Meta:
+        verbose_name = "Train Operating Company"
+        verbose_name_plural = "Train Operating Companies"
+
 
 class Location(models.Model):
     tiploc = models.CharField(max_length=7, primary_key=True)

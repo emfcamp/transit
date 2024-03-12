@@ -66,7 +66,7 @@ class CancellationReasonAdmin(admin.ModelAdmin):
         return False
 
 
-class JourneyStopAdmin(admin.TabularInline):
+class JourneyStopAdmin(admin.StackedInline):
     model = models.JourneyStop
     extra = 0
     ordering = ("order",)
