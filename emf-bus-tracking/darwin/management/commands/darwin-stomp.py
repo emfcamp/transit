@@ -82,6 +82,7 @@ class Command(BaseCommand, stomp.ConnectionListener):
         logging.error(f"STOP error {frame.body}")
 
     def on_disconnected(self):
-        logging.warn("STOMP disconnected")
+        logging.warning("STOMP disconnected")
+        time.sleep(30)
         self.connect_and_subscribe()
 
