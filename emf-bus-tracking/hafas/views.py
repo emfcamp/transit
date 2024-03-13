@@ -391,7 +391,7 @@ def arrival_board(
                 s.cancelled for s in darwin.models.JourneyStop.objects.filter(journey_id=journey_stop.journey_id))
             origin_stop: typing.Optional[darwin.models.JourneyStop] = darwin.models.JourneyStop.objects.filter(
                 journey_id=journey_stop.journey_id, origin=True).first()
-            journey = darwin.models.Journey.objects.filter(id=journey_stop.journey_id).first()
+            journey = darwin.models.Journey.objects.filter(rtti_unique_id=journey_stop.journey_id).first()
 
             arrival_board_elements.append((journey_stop.public_arrival, hafas_rest.Arrival(
                 name=journey_stop.journey.headcode,
@@ -421,7 +421,7 @@ def arrival_board(
                     hidden=journey_stop.platform_suppressed,
                 ) if journey_stop.current_platform else None,
 
-                cancelled=journey.cancel_reason is not None,
+                cancelled=journey.cancel_reason_id is not None,
                 part_cancelled=part_cancelled,
 
                 origin=get_location_name(request_context, origin_stop.location_id) if origin_stop else None,
@@ -440,7 +440,7 @@ def arrival_board(
                     ref=f"darwin:{journey.rtti_unique_id}"
                 ),
 
-                notes=hafas_rest.Notes()
+                notes=darwin_hafas_notes(request_context, journey)
             )))
 
     arrival_board_elements.sort(key=lambda x: x[0])
@@ -567,6 +567,7 @@ def departure_board(
                 s.cancelled for s in darwin.models.JourneyStop.objects.filter(journey_id=journey_stop.journey_id))
             destination_stop: typing.Optional[darwin.models.JourneyStop] = darwin.models.JourneyStop.objects.filter(
                 journey_id=journey_stop.journey_id, destination=True).first()
+            journey = darwin.models.Journey.objects.filter(rtti_unique_id=journey_stop.journey_id).first()
 
             destination_arrival = (
                     destination_stop.actual_arrival or destination_stop.estimated_arrival or None
@@ -600,7 +601,7 @@ def departure_board(
                     hidden=journey_stop.platform_suppressed,
                 ) if journey_stop.current_platform else None,
 
-                cancelled=journey_stop.journey.cancel_reason is not None,
+                cancelled=journey.cancel_reason_id is not None,
                 part_cancelled=part_cancelled,
 
                 direction=get_location_name(request_context,
@@ -615,7 +616,7 @@ def departure_board(
 
                 uncertain_delay=journey_stop.unknown_delay_departure,
 
-                product=[darwin_journey_to_product(request_context, journey_stop)],
+                product=[darwin_journey_to_product(request_context, journey)],
 
                 stops=hafas_rest.Stops(
                     stop=[darwin_stop_to_hafas(request_context, s) for s in darwin.models.JourneyStop.objects.filter(
@@ -624,10 +625,10 @@ def departure_board(
                 ),
 
                 journey_detail_ref=hafas_rest.JourneyDetailRef(
-                    ref=f"darwin:{journey_stop.journey.rtti_unique_id}"
+                    ref=f"darwin:{journey.rtti_unique_id}"
                 ),
 
-                notes=hafas_rest.Notes()
+                notes=darwin_hafas_notes(request_context, journey)
             )))
 
     departure_board_elements.sort(key=lambda x: x[0])
@@ -723,6 +724,56 @@ def darwin_journey_to_product(
         product.cat_out = category.name()
 
     return product
+
+
+def darwin_hafas_notes(request_context: RequestContext, journey: darwin.models.Journey) -> hafas_rest.Notes:
+    notes = hafas_rest.Notes()
+
+    if journey.cancel_reason_id:
+        cancel_reason_key = f"darwin_cancel_reason:{journey.cancel_reason_id}"
+        if cancel_reason := cache.get(cancel_reason_key):
+            text = cancel_reason
+        else:
+            text = journey.cancel_reason.description
+            cache.set(cancel_reason_key, text)
+
+        if journey.cancel_location_id:
+            location_name = get_location_name(request_context, journey.cancel_location_id)
+            if location_name:
+                if journey.cancel_reason_near:
+                    text = f"{text} near {location_name}"
+                else:
+                    text = f"{text} at {location_name}"
+
+        notes.note.append(hafas_rest.Note(
+            key="cancelReason",
+            type_value=hafas_rest.NoteType.P,
+            value=text,
+        ))
+
+    elif journey.late_reason_id:
+        late_reason_key = f"darwin_late_reason:{journey.late_reason_id}"
+        if late_reason := cache.get(late_reason_key):
+            text = late_reason
+        else:
+            text = journey.late_reason.description
+            cache.set(late_reason_key, text)
+
+        if journey.late_location_id:
+            location_name = get_location_name(request_context, journey.late_location_id)
+            if location_name:
+                if journey.late_reason_near:
+                    text = f"{text} near {location_name}"
+                else:
+                    text = f"{text} at {location_name}"
+
+        notes.note.append(hafas_rest.Note(
+            key="lateReason",
+            type_value=hafas_rest.NoteType.D,
+            value=text,
+        ))
+
+    return notes
 
 
 def get_location_name(request_context: RequestContext, tiploc: str) -> typing.Optional[str]:

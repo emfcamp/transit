@@ -50,6 +50,11 @@ class LateRunningReason(models.Model):
     def __str__(self):
         return f"{self.code} - {self.description}"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        cache.delete(f"darwin_late_reason:{self.code}")
+
 
 class CancellationReason(models.Model):
     code = models.IntegerField(primary_key=True, db_index=True)
@@ -57,6 +62,11 @@ class CancellationReason(models.Model):
 
     def __str__(self):
         return f"{self.code} - {self.description}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        cache.delete(f"darwin_cancel_reason:{self.code}")
 
 
 class Journey(models.Model):
