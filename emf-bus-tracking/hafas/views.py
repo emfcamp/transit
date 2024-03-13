@@ -202,8 +202,9 @@ def board_common(wrapped):
                 error_code="400",
                 error_text=f"Invalid id: {stop_id}",
             )
-        stop_obj: tracking.models.Stop = tracking.models.Stop.objects.filter(id=stop_id).first()
-        if not stop_obj:
+        try:
+            stop_obj: tracking.models.Stop = tracking.models.Stop.objects.get(id=stop_id).first()
+        except tracking.models.Stop.DoesNotExist:
             return hafas_rest.CommonResponseType(
                 error_code="404",
                 error_text=f"Stop not found: {stop_id}",
@@ -257,8 +258,9 @@ def board_common(wrapped):
                         error_code="400",
                         error_text=f"Invalid id: {line_id}",
                     )
-                line = tracking.models.Route.objects.filter(id=line_id).first()
-                if not line:
+                try:
+                    line = tracking.models.Route.objects.get(id=line_id)
+                except tracking.models.Route.DoesNotExist:
                     return hafas_rest.CommonResponseType(
                         error_code="404",
                         error_text=f"Line not found: {line_id}",
@@ -391,7 +393,7 @@ def arrival_board(
                 s.cancelled for s in darwin.models.JourneyStop.objects.filter(journey_id=journey_stop.journey_id))
             origin_stop: typing.Optional[darwin.models.JourneyStop] = darwin.models.JourneyStop.objects.filter(
                 journey_id=journey_stop.journey_id, origin=True).first()
-            journey = darwin.models.Journey.objects.filter(rtti_unique_id=journey_stop.journey_id).first()
+            journey = darwin.models.Journey.objects.get(rtti_unique_id=journey_stop.journey_id)
 
             arrival_board_elements.append((journey_stop.public_arrival, hafas_rest.Arrival(
                 name=journey_stop.journey.headcode,
@@ -567,7 +569,7 @@ def departure_board(
                 s.cancelled for s in darwin.models.JourneyStop.objects.filter(journey_id=journey_stop.journey_id))
             destination_stop: typing.Optional[darwin.models.JourneyStop] = darwin.models.JourneyStop.objects.filter(
                 journey_id=journey_stop.journey_id, destination=True).first()
-            journey = darwin.models.Journey.objects.filter(rtti_unique_id=journey_stop.journey_id).first()
+            journey = darwin.models.Journey.objects.get(rtti_unique_id=journey_stop.journey_id)
 
             destination_arrival = (
                     destination_stop.actual_arrival or destination_stop.estimated_arrival or None
@@ -643,10 +645,16 @@ def darwin_stop_to_hafas(request_context: RequestContext, stop: darwin.models.Jo
     own_stop = None
     if own_stop_id := cache.get(own_stop_id_cache_key) is not None:
         if own_stop_id != "NONE":
-            own_stop = tracking.models.Stop.objects.filter(id=own_stop_id).first()
+            try:
+                own_stop = tracking.models.Stop.objects.get(id=own_stop_id)
+            except tracking.models.Stop.DoesNotExist:
+                pass
     else:
-        darwin_location = darwin.models.Location.objects.filter(tiploc=stop.location_id).first()
-        monitored_stop = darwin.models.MonitoredStation.objects.filter(crs=darwin_location.crs).first()
+        darwin_location = darwin.models.Location.objects.get(tiploc=stop.location_id)
+        try:
+            monitored_stop = darwin.models.MonitoredStation.objects.get(crs=darwin_location.crs)
+        except darwin.models.MonitoredStation.DoesNotExist:
+            monitored_stop = None
         own_stop: typing.Optional[tracking.models.Stop] = monitored_stop.linked_stop if monitored_stop else None
         cache.set(own_stop_id_cache_key, own_stop.id if own_stop else "NONE", 3600)
 
@@ -782,15 +790,19 @@ def get_location_name(request_context: RequestContext, tiploc: str) -> typing.Op
         return name
     
     name = None
-    location = darwin.models.Location.objects.filter(tiploc=tiploc).first()
-    if location:
+    try:
+        location = darwin.models.Location.objects.get(tiploc=tiploc)
         if request_context.language == Language.Welsh and location.crs:
-            welsh_name = darwin.models.WelshStationName.objects.filter(crs=location.crs).first()
-            if welsh_name:
+            try:
+                welsh_name = darwin.models.WelshStationName.objects.get(crs=location.crs)
                 name = welsh_name.name
+            except darwin.models.WelshStationName.DoesNotExist:
+                pass
         
         if not name:
             name = location.name
+    except darwin.models.Location.DoesNotExist:
+        pass
 
     cache.set(cache_key, name)
     return name
@@ -802,15 +814,18 @@ def get_toc_name(request_context: RequestContext, toc_code: str) -> typing.Optio
         return name
 
     name = None
-    toc = darwin.models.TrainOperatingCompany.objects.filter(code=toc_code).first()
-    if toc:
+    try:
+        toc = darwin.models.TrainOperatingCompany.objects.get(code=toc_code)
+        name = toc.name
         if request_context.language == Language.Welsh:
-            welsh_name = darwin.models.WelshTrainOperatingCompanyName.objects.filter(toc=toc).first()
-            if welsh_name:
-                name =  welsh_name.name
+            try:
+                welsh_name = darwin.models.WelshTrainOperatingCompanyName.objects.get(toc=toc)
+                name = welsh_name.name
+            except darwin.models.WelshTrainOperatingCompanyName.DoesNotExist:
+                pass
 
-        if not name:
-            name = toc.name
+    except darwin.models.TrainOperatingCompany.DoesNotExist:
+        pass
 
     cache.set(cache_key, name)
     return name
