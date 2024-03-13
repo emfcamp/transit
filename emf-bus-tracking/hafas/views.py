@@ -366,7 +366,7 @@ def arrival_board(
         if not darwin_location:
             continue
 
-        relevant_journey_stops = darwin.models.JourneyStop.objects.filter(
+        darwin_relevant_journey_stops = darwin.models.JourneyStop.objects.filter(
             Q(location=darwin_location) & (
                     Q(public_arrival__gte=search_start_time) |
                     Q(estimated_arrival__gte=search_start_time) |
@@ -378,10 +378,10 @@ def arrival_board(
             )
         )
 
-        relevant_journey_stops: typing.List[darwin.models.JourneyStop] = \
-            list(filter(filter_darwin_journey_stop, relevant_journey_stops))
+        darwin_relevant_journey_stops: typing.List[darwin.models.JourneyStop] = \
+            list(filter(filter_darwin_journey_stop, darwin_relevant_journey_stops))
 
-        for journey_stop in relevant_journey_stops:
+        for journey_stop in darwin_relevant_journey_stops:
             if not journey_stop.public_arrival:
                 continue
 
@@ -541,7 +541,7 @@ def departure_board(
         if not darwin_location:
             continue
 
-        relevant_journey_stops = darwin.models.JourneyStop.objects.filter(
+        darwin_relevant_journey_stops = darwin.models.JourneyStop.objects.filter(
             Q(location=darwin_location) & (
                     Q(public_departure__gte=search_start_time) |
                     Q(estimated_departure__gte=search_start_time) |
@@ -553,10 +553,10 @@ def departure_board(
             )
         )
 
-        relevant_journey_stops: typing.List[darwin.models.JourneyStop] = \
-            list(filter(filter_journey_stop, relevant_journey_stops))
+        darwin_relevant_journey_stops: typing.List[darwin.models.JourneyStop] = \
+            list(filter(filter_journey_stop, darwin_relevant_journey_stops))
 
-        for journey_stop in relevant_journey_stops:
+        for journey_stop in darwin_relevant_journey_stops:
             if not journey_stop.public_departure:
                 continue
 

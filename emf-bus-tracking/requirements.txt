@@ -19,3 +19,4 @@ xsdata[cli,lxml]
 stomp.py
 boto3
 pytz
+django-cprofile-middleware
