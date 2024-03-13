@@ -78,7 +78,7 @@ WSGI_APPLICATION = "emf_bus_tracking.wsgi.application"
 
 DATABASES = {
     'default': {
-        "ENGINE": "django_query_profiler.django.db.backends.postgresql_psycopg2"
+        "ENGINE": "django_query_profiler.django.db.backends.postgresql"
         if DEBUG else "django.db.backends.postgresql",
         "HOST": os.getenv("DB_HOST", "localhost"),
         "NAME": os.getenv("DB_NAME", "emfta_tracking"),
