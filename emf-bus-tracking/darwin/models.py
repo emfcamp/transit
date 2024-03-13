@@ -1,3 +1,5 @@
+import typing
+
 from django.db import models
 from django.core.cache import cache
 import tracking.models
@@ -226,7 +228,7 @@ class MonitoredStation(models.Model):
         tracking.models.Stop, on_delete=models.SET_NULL, blank=True, null=True, related_name="darwin_link",
         db_constraint=False)
 
-    def location(self):
+    def location(self) -> typing.Optional[Location]:
         return Location.objects.filter(crs=self.crs).first()
 
     def __str__(self):
@@ -235,3 +237,8 @@ class MonitoredStation(models.Model):
             return f"{self.crs} - {location.name}"
         return f"{self.crs} - Unknown location"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if location := self.location():
+            cache.delete(f"darwin_stop_id:{location.tiploc}")

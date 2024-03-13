@@ -637,8 +637,16 @@ def departure_board(
 
 
 def darwin_stop_to_hafas(request_context: RequestContext, stop: darwin.models.JourneyStop) -> hafas_rest.StopType:
-    monitored_stop = darwin.models.MonitoredStation.objects.filter(crs=stop.location.crs).first()
-    own_stop: typing.Optional[tracking.models.Stop] = monitored_stop.linked_stop if monitored_stop else None
+    own_stop_id_cache_key = f"darwin_stop_id:{stop.location_id}"
+    own_stop = None
+    if own_stop_id := cache.get(own_stop_id_cache_key) is not None:
+        if own_stop_id != "NONE":
+            own_stop = tracking.models.Stop.objects.filter(id=own_stop_id).first()
+    else:
+        darwin_location = darwin.models.Location.objects.filter(tiploc=stop.location_id).first()
+        monitored_stop = darwin.models.MonitoredStation.objects.filter(crs=darwin_location.crs).first()
+        own_stop: typing.Optional[tracking.models.Stop] = monitored_stop.linked_stop if monitored_stop else None
+        cache.set(own_stop_id_cache_key, own_stop.id if own_stop else "NONE", 3600)
 
     rt_arrival = stop.actual_departure or stop.estimated_departure or None
     rt_departure = stop.actual_departure or stop.estimated_departure or None
