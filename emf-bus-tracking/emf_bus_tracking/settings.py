@@ -174,6 +174,12 @@ DARWIN_CLIENT_ID = os.getenv("DARWIN_CLIENT_ID")
 DARWIN_S3_ACCESS_KEY = os.getenv("DARWIN_S3_ACCESS_KEY")
 DARWIN_S3_SECRET_KEY = os.getenv("DARWIN_S3_SECRET_KEY")
 
+if DEBUG:
+    DJANGO_QUERY_PROFILER_REDIS_HOST = os.getenv("DJANGO_QUERY_PROFILER_REDIS_HOST", "localhost")
+    DJANGO_QUERY_PROFILER_REDIS_PORT = int(os.getenv("DJANGO_QUERY_PROFILER_REDIS_PORT", 6379))
+    DJANGO_QUERY_PROFILER_REDIS_DB = int(os.getenv("DJANGO_QUERY_PROFILER_REDIS_DB", 0))
+
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
