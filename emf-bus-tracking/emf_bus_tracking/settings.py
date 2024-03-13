@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     "tracking",
 ]
 
+if DEBUG:
+    INSTALLED_APPS.append("django_query_profiler")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -49,6 +52,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_cprofile_middleware.middleware.ProfilerMiddleware",
 ]
+
+if DEBUG:
+    MIDDLEWARE.append("django_query_profiler.client.middleware.QueryProfilerMiddleware")
 
 ROOT_URLCONF = "emf_bus_tracking.urls"
 
@@ -72,7 +78,8 @@ WSGI_APPLICATION = "emf_bus_tracking.wsgi.application"
 
 DATABASES = {
     'default': {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_query_profiler.django.db.backends.postgresql_psycopg2"
+        if DEBUG else "django.db.backends.postgresql",
         "HOST": os.getenv("DB_HOST", "localhost"),
         "NAME": os.getenv("DB_NAME", "emfta_tracking"),
         "USER": os.getenv("DB_USER", "emfta_tracking"),
@@ -125,7 +132,7 @@ CELERY_BEAT_SCHEDULE = {
 
 TRANSIT_CONFIG = {
     "agency_id": "EMF",
-    "agency_name": "Electromagnetic Field",
+    "agency_name": "Transport for EMF",
     "agency_url": "https://bus.emf.camp",
 }
 

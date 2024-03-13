@@ -20,3 +20,4 @@ stomp.py
 boto3
 pytz
 django-cprofile-middleware
+django-query-profiler

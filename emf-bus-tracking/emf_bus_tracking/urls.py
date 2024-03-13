@@ -25,3 +25,6 @@ urlpatterns = [
     path("hafas/", include("hafas.urls")),
     path("", include("tracking.urls"))
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if settings.DEBUG:
+    urlpatters.append(path('django_query_profiler/', include('django_query_profiler.client.urls')))

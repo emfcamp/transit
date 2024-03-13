@@ -147,7 +147,7 @@ CELERY_BEAT_SCHEDULE = {
 
 TRANSIT_CONFIG = {
     "agency_id": "EMF",
-    "agency_name": "Electromagnetic Field",
+    "agency_name": "Transport for EMF",
     "agency_url": "https://bus.emf.camp",
 }
 
