@@ -283,11 +283,27 @@ def handle_station_message(message: push_port.rtti_pptstation_messages_v1.Statio
 
     logging.info(f"{timestamp} - new station message: {message.id}")
 
+    message_text = ""
+    for part in message.msg.content:
+        if isinstance(part, push_port.rtti_pptstation_messages_v1.P):
+            message_text += "\n\n"
+            for p_part in part.content:
+                if isinstance(p_part, push_port.rtti_pptstation_messages_v1.A):
+                    message_text += f"[{p_part.value}]({p_part.href})"
+                else:
+                    message_text += str(p_part)
+        elif isinstance(part, push_port.rtti_pptstation_messages_v1.A):
+            message_text += f"[{part.value}]({part.href})"
+        else:
+            message_text += str(part)
+
+    message_text = message_text.strip()
+
     with transaction.atomic():
         message_obj, _ = models.Message.objects.update_or_create(
             message_id=message.id,
             defaults={
-                "message": str(message.msg),
+                "message": message_text,
                 "category": message.cat.value,
                 "severity": message.sev.value,
                 "supress_rtt": message.suppress,

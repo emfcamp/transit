@@ -7,6 +7,7 @@ import datetime
 import typing
 import uuid
 import decimal
+import markdown
 import xsdata.formats.dataclass.serializers.xml
 import xsdata.formats.dataclass.serializers.json
 from django.http import HttpResponse
@@ -14,6 +15,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.conf import settings
 from django.core.cache import cache
+from lxml import etree
 import tracking.models
 import darwin.models
 from . import hafas_rest
@@ -285,6 +287,7 @@ def arrival_board(
         search_end_time: datetime.datetime,
         search_lines: typing.List[typing.Tuple[tracking.models.Route, bool]]
 ) -> hafas_rest.CommonResponseType:
+    arrival_board_output = hafas_rest.ArrivalBoard()
     arrival_board_elements = []
 
     def filter_tracking_journey_stop(stop: tracking.models.JourneyPoint):
@@ -369,6 +372,9 @@ def arrival_board(
         if not darwin_location:
             continue
 
+        if darwin_location.crs:
+            arrival_board_output.message.extend(darwin_station_messages(darwin_location.crs))
+
         darwin_relevant_journey_stops = darwin.models.JourneyStop.objects.filter(
             Q(location=darwin_location) & (
                     Q(public_arrival__gte=search_start_time) |
@@ -445,10 +451,9 @@ def arrival_board(
                 notes=darwin_hafas_notes(request_context, journey)
             )))
 
-    arrival_board_elements.sort(key=lambda x: x[0])
-    arrival_board_output = hafas_rest.ArrivalBoard(arrival=[
-        e[1] for e in arrival_board_elements
-    ])
+    arrival_board_output.arrival = [
+        e[1] for e in sorted(arrival_board_elements, key=lambda x: x[0].timestamp())
+    ]
     return arrival_board_output
 
 
@@ -462,6 +467,7 @@ def departure_board(
         search_lines: typing.List[typing.Tuple[tracking.models.Route, bool]]
 ) -> hafas_rest.CommonResponseType:
     departure_board_elements = []
+    departure_board_output = hafas_rest.DepartureBoard()
 
     def filter_tracking_journey_stop(stop: tracking.models.JourneyPoint):
         if stop.real_time_departure:
@@ -544,6 +550,9 @@ def departure_board(
         darwin_location = darwin_location.location()
         if not darwin_location:
             continue
+
+        if darwin_location.crs:
+            departure_board_output.message.extend(darwin_station_messages(darwin_location.crs))
 
         darwin_relevant_journey_stops = darwin.models.JourneyStop.objects.filter(
             Q(location=darwin_location) & (
@@ -633,10 +642,9 @@ def departure_board(
                 notes=darwin_hafas_notes(request_context, journey)
             )))
 
-    departure_board_elements.sort(key=lambda x: x[0])
-    departure_board_output = hafas_rest.DepartureBoard(departure=[
-        e[1] for e in departure_board_elements
-    ])
+    departure_board_output.departure = [
+        e[1] for e in sorted(departure_board_elements, key=lambda x: x[0].timestamp())
+    ]
     return departure_board_output
 
 
@@ -890,3 +898,25 @@ def stop_to_hafas(journey_stop: tracking.models.JourneyPoint) -> hafas_rest.Stop
 
         notes=hafas_rest.Notes()
     )
+
+
+def darwin_station_messages(crs: str) -> typing.List[hafas_rest.Message]:
+    out = []
+    messages = darwin.models.Message.objects.filter(stations__crs=crs)
+
+    for message in messages:
+        doc = etree.fromstring(markdown.markdown(message.message))
+
+        hafas_message = hafas_rest.Message(
+            text="".join(doc.itertext()),
+            priority=int(message.severity),
+            external_id=f"darwin:{message.message_id}",
+            channel=[hafas_rest.MessageChannelType(
+                name=link.text,
+                url=[hafas_rest.UrlLinkType(url=link.get("href"))]
+            ) for link in doc.xpath('//a')]
+        )
+        out.append(hafas_message)
+
+    return out
+

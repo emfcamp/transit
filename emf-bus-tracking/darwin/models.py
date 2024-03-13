@@ -201,7 +201,7 @@ class Message(models.Model):
     message = models.TextField()
     category = models.CharField(max_length=255)
     severity = models.CharField(max_length=255)
-    supress_rtt = models.BooleanField(default=False)
+    supress_rtt = models.BooleanField(default=False, verbose_name="Suppress RTT")
 
     def __str__(self):
         return f"{self.message_id}"
