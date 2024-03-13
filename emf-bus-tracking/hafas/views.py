@@ -203,7 +203,7 @@ def board_common(wrapped):
                 error_text=f"Invalid id: {stop_id}",
             )
         try:
-            stop_obj: tracking.models.Stop = tracking.models.Stop.objects.get(id=stop_id).first()
+            stop_obj: tracking.models.Stop = tracking.models.Stop.objects.get(id=stop_id)
         except tracking.models.Stop.DoesNotExist:
             return hafas_rest.CommonResponseType(
                 error_code="404",
