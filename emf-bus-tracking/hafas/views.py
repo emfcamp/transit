@@ -386,9 +386,10 @@ def arrival_board(
                 continue
 
             rt_arrival = journey_stop.actual_arrival or journey_stop.estimated_arrival or None
-            part_cancelled = any(s.cancelled for s in journey_stop.journey.stops.all())
-            origin_stop: typing.Optional[darwin.models.JourneyStop] = \
-                journey_stop.journey.stops.filter(origin=True).first()
+            part_cancelled = any(
+                s.cancelled for s in darwin.models.JourneyStop.objects.filter(journey_id=journey_stop.journey_id))
+            origin_stop: typing.Optional[darwin.models.JourneyStop] = darwin.models.JourneyStop.objects.filter(
+                journey_id=journey_stop.journey_id, origin=True).first()
 
             arrival_board_elements.append((journey_stop.public_arrival, hafas_rest.Arrival(
                 name=journey_stop.journey.headcode,
@@ -428,8 +429,8 @@ def arrival_board(
                 product=[darwin_journey_to_product(request_context, journey_stop)],
 
                 stops=hafas_rest.Stops(
-                    stop=[darwin_stop_to_hafas(request_context, s) for s in journey_stop.journey.stops.filter(
-                        order__lte=journey_stop.order
+                    stop=[darwin_stop_to_hafas(request_context, s) for s in darwin.models.JourneyStop.objects.filter(
+                        journey_id=journey_stop.journey_id, order__lte=journey_stop.order
                     )]
                 ),
 
@@ -560,9 +561,10 @@ def departure_board(
                 continue
 
             rt_departure = journey_stop.actual_departure or journey_stop.estimated_departure or None
-            part_cancelled = any(s.cancelled for s in journey_stop.journey.stops.all())
-            destination_stop: typing.Optional[darwin.models.JourneyStop] = \
-                journey_stop.journey.stops.filter(destination=True).first()
+            part_cancelled = any(
+                s.cancelled for s in darwin.models.JourneyStop.objects.filter(journey_id=journey_stop.journey_id))
+            destination_stop: typing.Optional[darwin.models.JourneyStop] = darwin.models.JourneyStop.objects.filter(
+                journey_id=journey_stop.journey_id, destination=True).first()
 
             destination_arrival = (
                     destination_stop.actual_arrival or destination_stop.estimated_arrival or None
@@ -614,8 +616,8 @@ def departure_board(
                 product=[darwin_journey_to_product(request_context, journey_stop)],
 
                 stops=hafas_rest.Stops(
-                    stop=[darwin_stop_to_hafas(request_context, s) for s in journey_stop.journey.stops.filter(
-                        order__gt=journey_stop.order
+                    stop=[darwin_stop_to_hafas(request_context, s) for s in darwin.models.JourneyStop.objects.filter(
+                        journey_id=journey_stop.journey_id, order__gt=journey_stop.order
                     )]
                 ),
 

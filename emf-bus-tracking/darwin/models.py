@@ -4,7 +4,7 @@ import tracking.consts
 
 
 class TrainOperatingCompany(models.Model):
-    code = models.CharField(max_length=2, primary_key=True)
+    code = models.CharField(max_length=2, primary_key=True, db_index=True)
     name = models.CharField(max_length=256)
     website = models.URLField(max_length=512, blank=True, null=True)
 
@@ -17,8 +17,8 @@ class TrainOperatingCompany(models.Model):
 
 
 class Location(models.Model):
-    tiploc = models.CharField(max_length=7, primary_key=True)
-    crs = models.CharField(max_length=3, blank=True, null=True)
+    tiploc = models.CharField(max_length=7, primary_key=True, db_index=True)
+    crs = models.CharField(max_length=3, blank=True, null=True, db_index=True)
     toc = models.ForeignKey(
         TrainOperatingCompany, on_delete=models.DO_NOTHING, blank=True, null=True, db_constraint=False,
         verbose_name="Train Operating Company")
@@ -31,7 +31,7 @@ class Location(models.Model):
 
 
 class LateRunningReason(models.Model):
-    code = models.IntegerField(primary_key=True)
+    code = models.IntegerField(primary_key=True, db_index=True)
     description = models.CharField(max_length=256)
 
     def __str__(self):
@@ -39,7 +39,7 @@ class LateRunningReason(models.Model):
 
 
 class CancellationReason(models.Model):
-    code = models.IntegerField(primary_key=True)
+    code = models.IntegerField(primary_key=True, db_index=True)
     description = models.CharField(max_length=256)
 
     def __str__(self):
@@ -154,6 +154,20 @@ class JourneyStop(models.Model):
     class Meta:
         unique_together = ("journey", "location", "order")
         ordering = ("order",)
+        indexes = [
+            models.Index(fields=['journey', 'order']),
+            models.Index(fields=['journey', 'origin']),
+            models.Index(fields=['journey', 'destination']),
+
+            models.Index(fields=['location', 'public_arrival']),
+            models.Index(fields=['location', 'public_departure']),
+            models.Index(fields=['location', 'working_arrival']),
+            models.Index(fields=['location', 'working_departure']),
+            models.Index(fields=['location', 'actual_arrival']),
+            models.Index(fields=['location', 'actual_departure']),
+            models.Index(fields=['location', 'estimated_arrival']),
+            models.Index(fields=['location', 'estimated_departure']),
+        ]
 
     def __str__(self):
         return f"{self.journey} - {self.location}"
@@ -172,14 +186,14 @@ class Message(models.Model):
 
 class MessageStation(models.Model):
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name="stations")
-    crs = models.CharField(max_length=3)
+    crs = models.CharField(max_length=3, db_index=True)
 
     def __str__(self):
         return f"{self.message} - {self.crs}"
 
 
 class WelshStationName(models.Model):
-    crs = models.CharField(max_length=3, primary_key=True)
+    crs = models.CharField(max_length=3, primary_key=True, db_index=True)
     name = models.CharField(max_length=255)
 
     def __str__(self):
@@ -188,7 +202,7 @@ class WelshStationName(models.Model):
 
 class WelshTrainOperatingCompanyName(models.Model):
     toc = models.OneToOneField(
-        TrainOperatingCompany, on_delete=models.DO_NOTHING, primary_key=True, db_constraint=False)
+        TrainOperatingCompany, on_delete=models.DO_NOTHING, primary_key=True, db_constraint=False, db_index=True)
     name = models.CharField(max_length=255)
 
     def __str__(self):
@@ -196,7 +210,7 @@ class WelshTrainOperatingCompanyName(models.Model):
 
 
 class MonitoredStation(models.Model):
-    crs = models.CharField(max_length=3, verbose_name="CRS code (station identifier)")
+    crs = models.CharField(max_length=3, verbose_name="CRS code (station identifier)", db_index=True)
     linked_stop = models.ForeignKey(
         tracking.models.Stop, on_delete=models.SET_NULL, blank=True, null=True, related_name="darwin_link",
         db_constraint=False)
