@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
 from django.conf import settings
+from django.core.cache import cache
 import tracking.models
 import darwin.models
 from . import hafas_rest
@@ -716,29 +717,43 @@ def darwin_journey_to_product(
 
 
 def get_location_name(request_context: RequestContext, tiploc: str) -> typing.Optional[str]:
+    cache_key = f"darwin_location_name:{tiploc}"
+    if name := cache.get(cache_key):
+        return name
+    
+    name = None
     location = darwin.models.Location.objects.filter(tiploc=tiploc).first()
-    if not location:
-        return None
+    if location:
+        if request_context.language == Language.Welsh and location.crs:
+            welsh_name = darwin.models.WelshStationName.objects.filter(crs=location.crs).first()
+            if welsh_name:
+                name = welsh_name.name
+        
+        if not name:
+            name = location.name
 
-    if request_context.language == Language.Welsh and location.crs:
-        welsh_name = darwin.models.WelshStationName.objects.filter(crs=location.crs).first()
-        if welsh_name:
-            return welsh_name.name
-
-    return location.name
+    cache.set(cache_key, name)
+    return name
 
 
 def get_toc_name(request_context: RequestContext, toc_code: str) -> typing.Optional[str]:
+    cache_key = f"darwin_toc_name:{toc_code}"
+    if name := cache.get(cache_key):
+        return name
+
+    name = None
     toc = darwin.models.TrainOperatingCompany.objects.filter(code=toc_code).first()
-    if not toc:
-        return None
+    if toc:
+        if request_context.language == Language.Welsh:
+            welsh_name = darwin.models.WelshTrainOperatingCompanyName.objects.filter(toc=toc).first()
+            if welsh_name:
+                name =  welsh_name.name
 
-    if request_context.language == Language.Welsh:
-        welsh_name = darwin.models.WelshTrainOperatingCompanyName.objects.filter(toc=toc).first()
-        if welsh_name:
-            return welsh_name.name
+        if not name:
+            name = toc.name
 
-    return toc.name
+    cache.set(cache_key, name)
+    return name
 
 
 def journey_to_product(journey_stop: tracking.models.JourneyPoint) -> hafas_rest.ProductType:

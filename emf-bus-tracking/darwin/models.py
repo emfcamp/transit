@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.cache import cache
 import tracking.models
 import tracking.consts
 
@@ -15,6 +16,11 @@ class TrainOperatingCompany(models.Model):
         verbose_name = "Train Operating Company"
         verbose_name_plural = "Train Operating Companies"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        cache.delete(f"darwin_toc_name:{self.code}")
+
 
 class Location(models.Model):
     tiploc = models.CharField(max_length=7, primary_key=True, db_index=True)
@@ -28,6 +34,11 @@ class Location(models.Model):
         if self.crs:
             return f"{self.tiploc} ({self.crs}) - {self.name}"
         return f"{self.tiploc} - {self.name}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        cache.delete(f"darwin_location_name:{self.crs}")
 
 
 class LateRunningReason(models.Model):
