@@ -391,6 +391,7 @@ def arrival_board(
                 s.cancelled for s in darwin.models.JourneyStop.objects.filter(journey_id=journey_stop.journey_id))
             origin_stop: typing.Optional[darwin.models.JourneyStop] = darwin.models.JourneyStop.objects.filter(
                 journey_id=journey_stop.journey_id, origin=True).first()
+            journey = darwin.models.Journey.objects.filter(id=journey_stop.journey_id).first()
 
             arrival_board_elements.append((journey_stop.public_arrival, hafas_rest.Arrival(
                 name=journey_stop.journey.headcode,
@@ -420,14 +421,14 @@ def arrival_board(
                     hidden=journey_stop.platform_suppressed,
                 ) if journey_stop.current_platform else None,
 
-                cancelled=journey_stop.journey.cancel_reason is not None,
+                cancelled=journey.cancel_reason is not None,
                 part_cancelled=part_cancelled,
 
                 origin=get_location_name(request_context, origin_stop.location_id) if origin_stop else None,
 
                 uncertain_delay=journey_stop.unknown_delay_departure,
 
-                product=[darwin_journey_to_product(request_context, journey_stop)],
+                product=[darwin_journey_to_product(request_context, journey)],
 
                 stops=hafas_rest.Stops(
                     stop=[darwin_stop_to_hafas(request_context, s) for s in darwin.models.JourneyStop.objects.filter(
@@ -436,7 +437,7 @@ def arrival_board(
                 ),
 
                 journey_detail_ref=hafas_rest.JourneyDetailRef(
-                    ref=f"darwin:{journey_stop.journey.rtti_unique_id}"
+                    ref=f"darwin:{journey.rtti_unique_id}"
                 ),
 
                 notes=hafas_rest.Notes()
@@ -706,18 +707,18 @@ def darwin_stop_to_hafas(request_context: RequestContext, stop: darwin.models.Jo
 
 
 def darwin_journey_to_product(
-        request_context: RequestContext, journey_stop: darwin.models.JourneyStop
+        request_context: RequestContext, journey: darwin.models.Journey
 ) -> hafas_rest.ProductType:
     product = hafas_rest.ProductType(
         operator_info=hafas_rest.OperatorType(
-            name=get_toc_name(request_context, journey_stop.journey.toc.code),
-            id=journey_stop.journey.toc.code,
+            name=get_toc_name(request_context, journey.toc_id),
+            id=journey.toc_id,
         ),
-        operator_code=journey_stop.journey.toc.code,
-        name=journey_stop.journey.headcode,
+        operator_code=journey.toc_id,
+        name=journey.headcode,
     )
 
-    if category := journey_stop.journey.map_service_category():
+    if category := journey.map_service_category():
         product.cat_code = category.value
         product.cat_out = category.name()
 
