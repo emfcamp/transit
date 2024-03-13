@@ -738,7 +738,7 @@ def darwin_hafas_notes(request_context: RequestContext, journey: darwin.models.J
     notes = hafas_rest.Notes()
 
     if journey.cancel_reason_id:
-        cancel_reason_key = f"darwin_cancel_reason:{journey.cancel_reason_id}"
+        cancel_reason_key = f"darwin_cancel_reason:{journey.cancel_reason_id}:{request_context.language.value}"
         if cancel_reason := cache.get(cancel_reason_key):
             text = cancel_reason
         else:
@@ -760,7 +760,7 @@ def darwin_hafas_notes(request_context: RequestContext, journey: darwin.models.J
         ))
 
     elif journey.late_reason_id:
-        late_reason_key = f"darwin_late_reason:{journey.late_reason_id}"
+        late_reason_key = f"darwin_late_reason:{journey.late_reason_id}:{request_context.language.value}"
         if late_reason := cache.get(late_reason_key):
             text = late_reason
         else:
@@ -785,7 +785,7 @@ def darwin_hafas_notes(request_context: RequestContext, journey: darwin.models.J
 
 
 def get_location_name(request_context: RequestContext, tiploc: str) -> typing.Optional[str]:
-    cache_key = f"darwin_location_name:{tiploc}"
+    cache_key = f"darwin_location_name:{tiploc}:{request_context.language.value}"
     if name := cache.get(cache_key):
         return name
     
@@ -809,7 +809,7 @@ def get_location_name(request_context: RequestContext, tiploc: str) -> typing.Op
 
 
 def get_toc_name(request_context: RequestContext, toc_code: str) -> typing.Optional[str]:
-    cache_key = f"darwin_toc_name:{toc_code}"
+    cache_key = f"darwin_toc_name:{toc_code}:{request_context.language.value}"
     if name := cache.get(cache_key):
         return name
 

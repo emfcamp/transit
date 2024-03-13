@@ -125,7 +125,9 @@ def handle_timestamp(
             time_obj = datetime.datetime.strptime(time_str, "%H:%M").time()
         elif len(time_str) == 8:
             time_obj = datetime.datetime.strptime(time_str, "%H:%M:%S").time()
-        timestamp = datetime.datetime.combine(last_timestamp.date(), time_obj, tzinfo=TIMEZONE)
+        else:
+            return None, last_timestamp
+        timestamp = TIMEZONE.localize(datetime.datetime.combine(last_timestamp.date(), time_obj))
         while timestamp < last_timestamp:
             timestamp += datetime.timedelta(days=1)
         return timestamp, timestamp
@@ -174,10 +176,10 @@ def handle_journey(
         )
         journey_obj.stops.all().delete()
 
-        last_public_timestamp = datetime.datetime.combine(
-            ssd, datetime.time(0, 0, 0), tzinfo=TIMEZONE)
-        last_working_timestamp = datetime.datetime.combine(
-            ssd, datetime.time(0, 0, 0), tzinfo=TIMEZONE)
+        last_public_timestamp = TIMEZONE.localize(datetime.datetime.combine(
+            ssd, datetime.time(0, 0, 0)))
+        last_working_timestamp = TIMEZONE.localize(datetime.datetime.combine(
+            ssd, datetime.time(0, 0, 0)))
 
         order = 1
         for op in journey.or_value:
@@ -339,13 +341,13 @@ def handle_train_status(
 
                 if location.arr.at:
                     time_obj = datetime.datetime.strptime(location.arr.at, "%H:%M").time()
-                    journey_stop.actual_arrival = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                    journey_stop.actual_arrival = TIMEZONE.localize(datetime.datetime.combine(date, time_obj)) \
                         .astimezone(datetime.UTC)
                 if location.arr.at_removed:
                     journey_stop.actual_arrival = None
                 if location.arr.et:
                     time_obj = datetime.datetime.strptime(location.arr.et, "%H:%M").time()
-                    journey_stop.estimated_arrival = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                    journey_stop.estimated_arrival = TIMEZONE.localize(datetime.datetime.combine(date, time_obj)) \
                         .astimezone(datetime.UTC)
                 journey_stop.unknown_delay_arrival = location.arr.delayed or False
             if location.dep:
@@ -355,13 +357,13 @@ def handle_train_status(
 
                 if location.dep.at:
                     time_obj = datetime.datetime.strptime(location.dep.at, "%H:%M").time()
-                    journey_stop.actual_departure = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                    journey_stop.actual_departure = TIMEZONE.localize(datetime.datetime.combine(date, time_obj)) \
                         .astimezone(datetime.UTC)
                 if location.dep.at_removed:
                     journey_stop.actual_departure = None
                 if location.dep.et:
                     time_obj = datetime.datetime.strptime(location.dep.et, "%H:%M").time()
-                    journey_stop.estimated_departure = datetime.datetime.combine(date, time_obj, tzinfo=TIMEZONE) \
+                    journey_stop.estimated_departure = TIMEZONE.localize(datetime.datetime.combine(date, time_obj)) \
                         .astimezone(datetime.UTC)
                 journey_stop.unknown_delay_departure = location.dep.delayed or False
 
