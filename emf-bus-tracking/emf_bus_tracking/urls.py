@@ -27,4 +27,4 @@ urlpatterns = [
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
-    urlpatters.append(path('django_query_profiler/', include('django_query_profiler.client.urls')))
+    urlpatterns.append(path('django_query_profiler/', include('django_query_profiler.client.urls')))
