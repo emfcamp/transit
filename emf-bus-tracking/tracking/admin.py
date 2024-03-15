@@ -75,7 +75,7 @@ class JourneyAdmin(SortableAdminBase, admin.ModelAdmin):
                 self.message_user(request, e.message, level=messages.ERROR)
             else:
                 gtfs_tasks.generate_gtfs_schedule.delay()
-                # return redirect("admin:tracking_journey_changelist")
+                return redirect("admin:tracking_journey_changelist")
 
         context = dict(
             self.admin_site.each_context(request),

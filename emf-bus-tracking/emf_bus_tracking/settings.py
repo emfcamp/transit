@@ -138,6 +138,7 @@ TRANSIT_CONFIG = {
 
 GTFS_CONFIG = {
     "agency": {
+        "timezone": "Europe/London",
         "lang": "en",
         "phone": None,
         "fare_url": None,
