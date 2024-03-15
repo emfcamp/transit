@@ -190,6 +190,13 @@ class JourneyAdmin(SortableAdminBase, admin.ModelAdmin):
             except ValueError:
                 raise ValidationError(f"Invalid departure time: {journey['Depart time']}")
 
+            try:
+                arrival_time = file_timezone.localize(
+                    timezone.datetime.strptime(journey["Arrival time"], "%H:%M:%S")
+                ).time()
+            except ValueError:
+                raise ValidationError(f"Invalid arrival time: {journey['Arrival time']}")
+
             with transaction.atomic():
                 journey_obj = self.get_journey_by_code_and_date(journey["Headcode"], service_start_date)
                 if not journey_obj:
@@ -215,7 +222,7 @@ class JourneyAdmin(SortableAdminBase, admin.ModelAdmin):
                     stop=to_stop,
                     timing_point=True,
                     order=2,
-                    arrival_time=file_timezone.localize(timezone.datetime.combine(service_start_date, departure_time))
+                    arrival_time=file_timezone.localize(timezone.datetime.combine(service_start_date, arrival_time))
                 )
 
                 journey_obj.points.all().delete()
