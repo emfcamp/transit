@@ -1,6 +1,9 @@
 import xml.etree.ElementTree
-
 import celery.result
+import pytz
+import csv
+import datetime
+import codecs
 from django.contrib import admin
 from adminsortable2.admin import SortableAdminMixin, SortableInlineAdminMixin, SortableAdminBase
 from django.core.exceptions import ValidationError
@@ -20,8 +23,7 @@ class StopAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj: models.Stop, form, change):
         super().save_model(request, obj, form, change)
-        if not obj.internal:
-            gtfs_tasks.generate_gtfs_schedule.delay()
+        gtfs_tasks.generate_gtfs_schedule.delay()
 
 
 class VehiclePositionAdmin(admin.TabularInline):
@@ -47,20 +49,184 @@ class JourneyPointAdmin(SortableInlineAdminMixin, admin.TabularInline):
 
 @admin.register(models.Journey)
 class JourneyAdmin(SortableAdminBase, admin.ModelAdmin):
+    change_list_template = "tracking/journey_changelist.html"
     inlines = [JourneyPointAdmin]
     list_display = ("code", "route", "start_date")
+    readonly_fields = ("start_date", "kalman_estimator_state")
+    sortable_by = ("code", "route", "start_date")
 
     def save_model(self, request, obj: models.Journey, form, change):
         super().save_model(request, obj, form, change)
+        gtfs_tasks.generate_gtfs_schedule.delay()
 
-        if obj.public:
-            gtfs_tasks.generate_gtfs_schedule.delay()
+    def get_urls(self):
+        urls = super().get_urls()
+        urls = [
+                   path("import_journey/", self.admin_site.admin_view(self.import_journey),
+                        name="tracking_journey_import"),
+               ] + urls
+        return urls
+
+    def import_journey(self, request):
+        if request.method == "POST":
+            try:
+                self.handle_import(request)
+            except ValidationError as e:
+                self.message_user(request, e.message, level=messages.ERROR)
+            else:
+                gtfs_tasks.generate_gtfs_schedule.delay()
+                # return redirect("admin:tracking_journey_changelist")
+
+        context = dict(
+            self.admin_site.each_context(request),
+        )
+        return TemplateResponse(request, "tracking/journey_import.html", context)
+
+    def get_journey_by_code_and_date(self, code: str, date: datetime.date):
+        journey_obj = None
+
+        possible_journey_objs = models.Journey.objects.filter(code=code)
+        for possible_journey_obj in possible_journey_objs:
+            if point := possible_journey_obj.points.first():
+                if point.departure_time.date() == date:
+                    journey_obj = possible_journey_obj
+                    break
+
+        return journey_obj
+
+    def handle_import(self, request):
+        if not request.FILES.get("journey_csv"):
+            raise ValidationError("No file uploaded")
+
+        if not request.POST.get("timezone"):
+            raise ValidationError("No timezone given")
+
+        try:
+            file_timezone = pytz.timezone(request.POST["timezone"])
+        except pytz.UnknownTimeZoneError:
+            raise ValidationError(f"Invalid timezone: {request.POST['timezone']}")
+
+        journeys_file = request.FILES["journey_csv"]
+
+        try:
+            csv_reader = csv.DictReader(codecs.iterdecode(journeys_file, 'utf-8'))
+        except csv.Error as e:
+            raise ValidationError(f"Invalid CSV: {e}")
+
+        import_required_fields = [
+            "Day", "Headcode", "Vehicle", "Route", "From code", "To code", "Depart time", "Arrival time", "Public"
+        ]
+        if not all(field in csv_reader.fieldnames for field in import_required_fields):
+            raise ValidationError(f"Missing required fieldss: {import_required_fields}")
+
+        seen_forms_from = set()
+
+        for journey in csv_reader:
+            if not all(journey.get(field) for field in import_required_fields):
+                continue
+
+            try:
+                service_start_date = file_timezone.localize(
+                    timezone.datetime.strptime(journey["Day"], "%d/%m/%Y")
+                ).date()
+            except ValueError:
+                raise ValidationError(f"Invalid date: {journey['Day']}")
+
+            try:
+                route = models.Route.objects.get(name=journey["Route"])
+            except models.Route.DoesNotExist:
+                route = None
+
+            if journey.get("Shape"):
+                try:
+                    shape = models.Shape.objects.get(name=journey["Shape"])
+                except models.Shape.DoesNotExist:
+                    raise ValidationError(f"Shape not found: {journey['Shape']}")
+            else:
+                shape = None
+
+            try:
+                vehicle = models.Vehicle.objects.get(name=journey["Vehicle"])
+            except models.Vehicle.DoesNotExist:
+                raise ValidationError(f"Vehicle not found: {journey['Vehicle']}")
+
+            if journey.get("Forms from"):
+                try:
+                    forms_from = self.get_journey_by_code_and_date(journey["Forms from"], service_start_date)
+                except models.Journey.DoesNotExist:
+                    raise ValidationError(f"Forms from journey not found: {journey['Forms from']}")
+            else:
+                forms_from = None
+
+            if forms_from:
+                if (forms_from.id, service_start_date) in seen_forms_from:
+                    raise ValidationError(f"Duplicate forms from journey:"
+                                          f" {journey['Forms from']} on {service_start_date}")
+                seen_forms_from.add((forms_from.id, service_start_date))
+
+            if not journey.get("Direction"):
+                direction = models.Journey.DIRECTION_INBOUND
+            elif journey["Direction"] == "Inbound":
+                direction = models.Journey.DIRECTION_INBOUND
+            elif journey["Direction"] == "Outbound":
+                direction = models.Journey.DIRECTION_OUTBOUND
+            else:
+                raise ValidationError(f"Invalid direction: {journey['Direction']}")
+
+            try:
+                from_stop = models.Stop.objects.get(code=journey["From code"])
+            except models.Stop.DoesNotExist:
+                raise ValidationError(f"From stop not found: {journey['From code']}")
+
+            try:
+                to_stop = models.Stop.objects.get(code=journey["To code"])
+            except models.Stop.DoesNotExist:
+                raise ValidationError(f"To stop not found: {journey['To code']}")
+
+            try:
+                departure_time = file_timezone.localize(
+                    timezone.datetime.strptime(journey["Depart time"], "%H:%M:%S")
+                ).time()
+            except ValueError:
+                raise ValidationError(f"Invalid departure time: {journey['Depart time']}")
+
+            with transaction.atomic():
+                journey_obj = self.get_journey_by_code_and_date(journey["Headcode"], service_start_date)
+                if not journey_obj:
+                    journey_obj = models.Journey(code=journey["Headcode"])
+
+                journey_obj.public = journey["Public"] == "Yes"
+                journey_obj.route = route
+                journey_obj.vehicle = vehicle
+                journey_obj.forms_from = forms_from
+                journey_obj.direction = direction
+                journey_obj.shape = shape
+                journey_obj.save()
+
+                start_point = models.JourneyPoint(
+                    journey=journey_obj,
+                    stop=from_stop,
+                    timing_point=True,
+                    order=1,
+                    departure_time=file_timezone.localize(timezone.datetime.combine(service_start_date, departure_time))
+                )
+                end_point = models.JourneyPoint(
+                    journey=journey_obj,
+                    stop=to_stop,
+                    timing_point=True,
+                    order=2,
+                    arrival_time=file_timezone.localize(timezone.datetime.combine(service_start_date, departure_time))
+                )
+
+                journey_obj.points.all().delete()
+                start_point.save()
+                end_point.save()
 
 
 @admin.register(models.Shape)
 class ShapeAdmin(SortableAdminBase, admin.ModelAdmin):
     readonly_fields = ["last_average_speed_update"]
-    change_list_template = "tracking/monitored_station_changelist.html"
+    change_list_template = "tracking/shape_changelist.html"
     change_form_template = "tracking/shape_change.html"
 
     def save_model(self, request, obj, form, change):
@@ -70,10 +236,11 @@ class ShapeAdmin(SortableAdminBase, admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         urls = [
-            path("import_shape/", self.admin_site.admin_view(self.import_shape), name="tracking_shape_import"),
-            path("update_shape_average_speed/<shape_id>/", self.admin_site.admin_view(self.updae_shape_average_speed),
-                 name="tracking_shape_update_average_speed"),
-        ] + urls
+                   path("import_shape/", self.admin_site.admin_view(self.import_shape), name="tracking_shape_import"),
+                   path("update_shape_average_speed/<shape_id>/",
+                        self.admin_site.admin_view(self.updae_shape_average_speed),
+                        name="tracking_shape_update_average_speed"),
+               ] + urls
         return urls
 
     def import_shape(self, request):

@@ -3,6 +3,7 @@ import uuid
 import zipfile
 import csv
 import io
+import pytz
 import docker
 from django.utils import timezone
 from django.conf import settings
@@ -18,6 +19,7 @@ from tracking import models
 def generate_gtfs_schedule():
     now = timezone.now()
     feed_version = f"{now.date().isoformat()}-{uuid.uuid4()}"
+    agency_timezone = pytz.timezone(settings.GTFS_CONFIG["agency"]["timezone"])
 
     output_file = io.BytesIO()
     output_zip = zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False)
@@ -35,19 +37,19 @@ def generate_gtfs_schedule():
         write_routes_file(file, output_json)
 
     with output_zip.open("trips.txt", "w") as file:
-        write_trips_file(file)
+        write_trips_file(file, agency_timezone)
 
     with output_zip.open("stop_times.txt", "w") as file:
-        write_stop_times_file(file)
+        write_stop_times_file(file, agency_timezone)
 
     with output_zip.open("calendar.txt", "w") as file:
-        write_calendar_file(file)
+        write_calendar_file(file, agency_timezone)
 
     with output_zip.open("shapes.txt", "w") as file:
         write_shapes_file(file)
 
     with output_zip.open("timetables.txt", "w") as file:
-        write_timetables_file(file)
+        write_timetables_file(file, agency_timezone)
 
     with output_zip.open("feed_info.txt", "w") as file:
         write_feed_info_file(file, feed_version, output_json)
@@ -85,7 +87,7 @@ def write_agency_file(file, output_json: dict):
         "agency_id": settings.TRANSIT_CONFIG["agency_id"],
         "agency_name": settings.TRANSIT_CONFIG["agency_name"],
         "agency_url": settings.TRANSIT_CONFIG["agency_url"],
-        "agency_timezone": "UTC",
+        "agency_timezone": settings.GTFS_CONFIG["agency"]["timezone"],
         "agency_lang": settings.GTFS_CONFIG["agency"]["lang"] or "",
         "agency_phone": settings.GTFS_CONFIG["agency"]["phone"] or "",
         "agency_fare_url": settings.GTFS_CONFIG["agency"]["fare_url"] or "",
@@ -178,7 +180,7 @@ def write_routes_file(file, output_json: dict):
         for route in models.Route.objects.all().order_by('order'):
             data = {
                 "route_id": str(route.id),
-                "agency_id": settings.GTFS_CONFIG["agency"]["id"],
+                "agency_id": settings.TRANSIT_CONFIG["agency_id"],
                 "route_short_name": route.name,
                 "route_long_name": "",
                 "route_desc": route.description or "",
@@ -195,7 +197,7 @@ def write_routes_file(file, output_json: dict):
             output_json["routes"][str(route.id)] = data
 
 
-def write_trips_file(file):
+def write_trips_file(file, agency_timezone: pytz.timezone):
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "route_id",
@@ -212,19 +214,25 @@ def write_trips_file(file):
         csv_file.writeheader()
 
         blocks = {}
-
+        forms_from = set()
         for journey in models.Journey.objects.filter(forms_from__isnull=True):
             block_id = uuid.uuid4()
             blocks[journey.id] = block_id
+            forms_from.add(journey.id)
 
-        for journey in models.Journey.objects.filter(forms_from__isnull=False):
-            block_id = blocks[journey.forms_from.id]
-            blocks[journey.id] = block_id
+        while forms_from:
+            new_forms_from = set()
+            for journey in models.Journey.objects.filter(forms_from__in=forms_from):
+                block_id = blocks[journey.forms_from.id]
+                blocks[journey.id] = block_id
+                new_forms_from.add(journey.id)
+            forms_from = new_forms_from
 
         for journey in models.Journey.objects.filter(public=True):
+            start_date = journey.start_datetime().astimezone(agency_timezone).date()
             csv_file.writerow({
                 "route_id": str(journey.route.id),
-                "service_id": journey.date.isoformat(),
+                "service_id": start_date.isoformat(),
                 "trip_id": str(journey.id),
                 "trip_headsign": "",
                 "trip_short_name": journey.code,
@@ -236,7 +244,7 @@ def write_trips_file(file):
             })
 
 
-def write_stop_times_file(file):
+def write_stop_times_file(file, agency_timezone: pytz.timezone):
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "trip_id",
@@ -259,6 +267,9 @@ def write_stop_times_file(file):
                 arrival_time = stop.arrival_time if stop.arrival_time else stop.departure_time
                 departure_time = stop.departure_time if stop.departure_time else stop.arrival_time
 
+                arrival_time = arrival_time.astimezone(agency_timezone)
+                departure_time = departure_time.astimezone(agency_timezone)
+
                 csv_file.writerow({
                     "trip_id": str(journey.id),
                     "arrival_time": arrival_time.strftime("%H:%M:%S"),
@@ -275,7 +286,7 @@ def write_stop_times_file(file):
                 })
 
 
-def write_calendar_file(file):
+def write_calendar_file(file, agency_timezone: pytz.timezone):
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "service_id",
@@ -293,21 +304,22 @@ def write_calendar_file(file):
 
         seen = set()
         for journey in models.Journey.objects.filter(public=True):
-            if journey.date in seen:
+            start_date = journey.start_datetime().astimezone(agency_timezone).date()
+            if start_date in seen:
                 continue
 
-            seen.add(journey.date)
+            seen.add(start_date)
             csv_file.writerow({
-                "service_id": journey.date.isoformat(),
-                "monday": "1" if journey.date.weekday() == 0 else "0",
-                "tuesday": "1" if journey.date.weekday() == 1 else "0",
-                "wednesday": "1" if journey.date.weekday() == 2 else "0",
-                "thursday": "1" if journey.date.weekday() == 3 else "0",
-                "friday": "1" if journey.date.weekday() == 4 else "0",
-                "saturday": "1" if journey.date.weekday() == 5 else "0",
-                "sunday": "1" if journey.date.weekday() == 6 else "0",
-                "start_date": journey.date.strftime("%Y%m%d"),
-                "end_date": journey.date.strftime("%Y%m%d"),
+                "service_id": start_date.isoformat(),
+                "monday": "1" if start_date.weekday() == 0 else "0",
+                "tuesday": "1" if start_date.weekday() == 1 else "0",
+                "wednesday": "1" if start_date.weekday() == 2 else "0",
+                "thursday": "1" if start_date.weekday() == 3 else "0",
+                "friday": "1" if start_date.weekday() == 4 else "0",
+                "saturday": "1" if start_date.weekday() == 5 else "0",
+                "sunday": "1" if start_date.weekday() == 6 else "0",
+                "start_date": start_date.strftime("%Y%m%d"),
+                "end_date": start_date.strftime("%Y%m%d"),
             })
 
 
@@ -367,7 +379,7 @@ def write_feed_info_file(file, version: str, output_json: dict):
     output_json["feed_info"] = data
 
 
-def write_timetables_file(file):
+def write_timetables_file(file, agency_timezone: pytz.timezone):
     with io.TextIOWrapper(file, encoding='utf-8', newline='') as text_file:
         csv_file = csv.DictWriter(text_file, fieldnames=[
             "timetable_id",
@@ -392,9 +404,12 @@ def write_timetables_file(file):
         csv_file.writeheader()
 
         for route in models.Route.objects.all():
-            dates = route.journey_set.filter(public=True).values('date').distinct().order_by('date')
-            for date in dates:
-                date = date["date"]
+            start_dates = set()
+            for journey in route.journey_set.filter(public=True):
+                start_date = journey.start_datetime().astimezone(agency_timezone).date()
+                start_dates.add(start_date)
+
+            for date in sorted(start_dates)[::-1]:
                 csv_file.writerow({
                     "timetable_id": f"{route.id}-{date.isoformat()}-inbound",
                     "route_id": str(route.id),

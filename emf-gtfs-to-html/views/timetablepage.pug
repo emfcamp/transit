@@ -22,41 +22,42 @@ include formatting_functions.pug
 
             .map-container(id=`map-container-timetable_id_${timetable.timetable_id}`)
 
-            table.table(summary= getTimetableSummary(timetable) data-orientation="horizontal")
-                thead
-                    tr
-                        th.stop-header Stop
-                        each trip, idx in timetable.orderedTrips
-                            th.run-header= formatTripName(trip, idx, timetable)
-                                each note in getNotesForTrip(timetable.notes, trip)
-                                    a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
-                                        sup= note.symbol
-                tbody
-                    each stop in timetable.stops
-                        tr.stop-row(id=`stop_id_${formatHtmlId(stop.stop_id)}`)
-                            th.stop-name
-                                - var stopName = `${stop.stop_name}${stop.type === 'arrival' ? ' (Arrival)' : stop.type === 'departure' ? ' (Departure)' : ''}`;
-
-                                if stop.stop_url
-                                    a.stop-name(href=`${stop.stop_url}`)= stopName
-                                        each note in getNotesForStop(timetable.notes, stop)
-                                            a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
-                                                sup= note.symbol
-                                else
-                                    .stop-name= stopName
-                                        each note in getNotesForStop(timetable.notes, stop)
-                                            a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
-                                                sup= note.symbol
-                                .stop-code= stop.stop_code
-                                .stop-description= stop.stop_desc
-
-                            each stoptime in stop.trips
-                                td.stop-time(class=`stop-time ${stoptime.classes.join(' ')}`, id=`trip_id_${formatHtmlId(stoptime.trip_id)}_stop_id_${formatHtmlId(stoptime.stop_id)}_seq_${stoptime.stop_sequence}_${stoptime.type}`)
-                                    span.stop-time-text!= stoptime.formatted_time
-                                    span.stop-time-rt-text
-                                    each note in getNotesForStoptime(timetable.notes, stoptime)
+            .table-container
+                table.table(summary= getTimetableSummary(timetable) data-orientation="horizontal")
+                    thead
+                        tr
+                            th.stop-header Stop
+                            each trip, idx in timetable.orderedTrips
+                                th.run-header= formatTripName(trip, idx, timetable)
+                                    each note in getNotesForTrip(timetable.notes, trip)
                                         a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
                                             sup= note.symbol
+                    tbody
+                        each stop in timetable.stops
+                            tr.stop-row(id=`stop_id_${formatHtmlId(stop.stop_id)}`)
+                                th.stop-name
+                                    - var stopName = `${stop.stop_name}${stop.type === 'arrival' ? ' (Arrival)' : stop.type === 'departure' ? ' (Departure)' : ''}`;
+
+                                    if stop.stop_url
+                                        a.stop-name(href=`${stop.stop_url}`)= stopName
+                                            each note in getNotesForStop(timetable.notes, stop)
+                                                a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
+                                                    sup= note.symbol
+                                    else
+                                        .stop-name= stopName
+                                            each note in getNotesForStop(timetable.notes, stop)
+                                                a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
+                                                    sup= note.symbol
+                                    .stop-code= stop.stop_code
+                                    .stop-description= stop.stop_desc
+
+                                each stoptime in stop.trips
+                                    td.stop-time(class=`stop-time ${stoptime.classes.join(' ')}`, id=`trip_id_${formatHtmlId(stoptime.trip_id)}_stop_id_${formatHtmlId(stoptime.stop_id)}_seq_${stoptime.stop_sequence}_${stoptime.type}`)
+                                        span.stop-time-text!= stoptime.formatted_time
+                                        span.stop-time-rt-text
+                                        each note in getNotesForStoptime(timetable.notes, stoptime)
+                                            a(href=`#note-${timetable.timetable_id}-${note.note_id}`).note-link
+                                                sup= note.symbol
 
             if hasNotesOrNotices(timetable)
                 .notes

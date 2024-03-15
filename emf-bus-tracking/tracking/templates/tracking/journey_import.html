@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static "admin/css/forms.css" %}">{% endblock %}
+
+{% block content %}
+    <h1>Import journey CSV</h1>
+    <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            <div class="form-row">
+                <div class="flex-container">
+                    <label for="timezone">Timezone</label>
+                    <input type="text" name="timezone" id="timezone" required />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="flex-container">
+                    <label for="journey_csv">Journey CSV</label>
+                    <input type="file" name="journey_csv" id="journey_csv" required />
+                </div>
+            </div>
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" class="default" value="Import" name="_save"/>
+        </div>
+    </form>
+{% endblock %}

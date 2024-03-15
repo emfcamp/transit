@@ -1,4 +1,5 @@
 import shapely
+import shapely.ops
 import requests
 import requests.adapters
 import datetime
@@ -117,7 +118,8 @@ def os_features_to_graph(os_data: typing.List[dict], search_path: shapely.LineSt
 
 
 def add_average_speed(
-        point: models.ShapePoint, days: typing.Set[consts.Days], start: datetime.time, end: datetime.time, speed: float
+        point: models.ShapePoint, days: typing.Set[consts.Days], start: datetime.time, end: datetime.time, speed: float,
+        direction: int
 ):
     new_speed = models.ShapePointAverageSpeed()
     new_speed.point = point
@@ -131,6 +133,7 @@ def add_average_speed(
     new_speed.valid_friday = consts.Days.FRIDAY in days
     new_speed.valid_saturday = consts.Days.SATURDAY in days
     new_speed.valid_sunday = consts.Days.SUNDAY in days
+    new_speed.direction = direction
     new_speed.save()
 
 
@@ -169,22 +172,38 @@ def update_average_speed_data(shape_id):
 
             for part in line_parts:
                 direction = "indirection" if part.direction == map_lines.EdgeDirection.FORWARD else "againstdirection"
+                reverse_direction = \
+                    "indirection" if part.direction == map_lines.EdgeDirection.BACKWARD else "againstdirection"
 
                 speed_limit = part.data["indicativespeedlimit_kph"]
                 speed_mf_4_7 = part.data[f"averagespeed_mf4to7{direction}_kph"]
+                reverse_speed_mf_4_7 = part.data[f"averagespeed_mf4to7{reverse_direction}_kph"] or speed_mf_4_7
                 speed_mf_7_9 = part.data[f"averagespeed_mf7to9{direction}_kph"]
+                reverse_speed_mf_7_9 = part.data[f"averagespeed_mf7to9{reverse_direction}_kph"] or speed_mf_7_9
                 speed_mf_9_12 = part.data[f"averagespeed_mf9to12{direction}_kph"]
+                reverse_speed_mf_9_12 = part.data[f"averagespeed_mf9to12{reverse_direction}_kph"] or speed_mf_9_12
                 speed_mf_12_14 = part.data[f"averagespeed_mf12to14{direction}_kph"]
+                reverse_speed_mf_12_14 = part.data[f"averagespeed_mf12to14{reverse_direction}_kph"] or speed_mf_12_14
                 speed_mf_14_16 = part.data[f"averagespeed_mf14to16{direction}_kph"]
+                reverse_speed_mf_14_16 = part.data[f"averagespeed_mf14to16{reverse_direction}_kph"] or speed_mf_14_16
                 speed_mf_16_19 = part.data[f"averagespeed_mf16to19{direction}_kph"]
+                reverse_speed_mf_16_19 = part.data[f"averagespeed_mf16to19{reverse_direction}_kph"] or speed_mf_16_19
                 speed_mf_19_22 = part.data[f"averagespeed_mf19to22{direction}_kph"]
+                reverse_speed_mf_19_22 = part.data[f"averagespeed_mf19to22{reverse_direction}_kph"] or speed_mf_19_22
                 speed_mf_22_4 = part.data[f"averagespeed_mf22to4{direction}_kph"]
+                reverse_speed_mf_22_4 = part.data[f"averagespeed_mf22to4{reverse_direction}_kph"] or speed_mf_22_4
                 speed_ss_4_7 = part.data[f"averagespeed_ss4to7{direction}_kph"]
+                reverse_speed_ss_4_7 = part.data[f"averagespeed_ss4to7{reverse_direction}_kph"] or speed_ss_4_7
                 speed_ss_7_10 = part.data[f"averagespeed_ss7to10{direction}_kph"]
+                reverse_speed_ss_7_10 = part.data[f"averagespeed_ss7to10{reverse_direction}_kph"] or speed_ss_7_10
                 speed_ss_10_14 = part.data[f"averagespeed_ss10to14{direction}_kph"]
+                reverse_speed_ss_10_14 = part.data[f"averagespeed_ss10to14{reverse_direction}_kph"] or speed_ss_10_14
                 speed_ss_14_19 = part.data[f"averagespeed_ss14to19{direction}_kph"]
+                reverse_speed_ss_14_19 = part.data[f"averagespeed_ss14to19{reverse_direction}_kph"] or speed_ss_14_19
                 speed_ss_19_22 = part.data[f"averagespeed_ss19to22{direction}_kph"]
+                reverse_speed_ss_19_22 = part.data[f"averagespeed_ss19to22{reverse_direction}_kph"] or speed_ss_19_22
                 speed_ss_22_4 = part.data[f"averagespeed_ss22to4{direction}_kph"]
+                reverse_speed_ss_22_4 = part.data[f"averagespeed_ss22to4{reverse_direction}_kph"] or speed_ss_22_4
 
                 for point in part.line.coords[:-1]:
                     order += 1
@@ -199,82 +218,162 @@ def update_average_speed_data(shape_id):
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(4, 0), datetime.time(6, 59, 59, 999999),
-                        speed_mf_4_7
+                        speed_mf_4_7, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(4, 0), datetime.time(6, 59, 59, 999999),
+                        reverse_speed_mf_4_7, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(7, 0), datetime.time(8, 59, 59, 999999),
-                        speed_mf_7_9
+                        speed_mf_7_9, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(7, 0), datetime.time(8, 59, 59, 999999),
+                        reverse_speed_mf_7_9, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(9, 0), datetime.time(11, 59, 59, 999999),
-                        speed_mf_9_12
+                        speed_mf_9_12, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(9, 0), datetime.time(11, 59, 59, 999999),
+                        reverse_speed_mf_9_12, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(12, 0), datetime.time(13, 59, 59, 999999),
-                        speed_mf_12_14
+                        speed_mf_12_14, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(12, 0), datetime.time(13, 59, 59, 999999),
+                        reverse_speed_mf_12_14, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(14, 0), datetime.time(15, 59, 59, 999999),
-                        speed_mf_14_16
+                        speed_mf_14_16, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(14, 0), datetime.time(15, 59, 59, 999999),
+                        reverse_speed_mf_14_16, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(16, 0), datetime.time(18, 59, 59, 999999),
-                        speed_mf_16_19
+                        speed_mf_16_19, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(16, 0), datetime.time(18, 59, 59, 999999),
+                        reverse_speed_mf_16_19, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(19, 0), datetime.time(23, 59, 59, 999999),
-                        speed_mf_19_22
+                        speed_mf_19_22, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(19, 0), datetime.time(23, 59, 59, 999999),
+                        reverse_speed_mf_19_22, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_MF,
                         datetime.time(22, 0), datetime.time(23, 59, 59, 999999),
-                        speed_mf_22_4
+                        speed_mf_22_4, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_MF,
+                        datetime.time(22, 0), datetime.time(23, 59, 59, 999999),
+                        reverse_speed_mf_22_4, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_TS,
                         datetime.time(0, 0), datetime.time(3, 59, 59, 999999),
-                        speed_mf_22_4
+                        speed_mf_22_4, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_TS,
+                        datetime.time(0, 0), datetime.time(3, 59, 59, 999999),
+                        reverse_speed_mf_22_4, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_SS,
                         datetime.time(4, 0), datetime.time(6, 59, 59, 999999),
-                        speed_ss_4_7
+                        speed_ss_4_7, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_SS,
+                        datetime.time(4, 0), datetime.time(6, 59, 59, 999999),
+                        reverse_speed_ss_4_7, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_SS,
                         datetime.time(7, 0), datetime.time(9, 59, 59, 999999),
-                        speed_ss_7_10
+                        speed_ss_7_10, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_SS,
+                        datetime.time(7, 0), datetime.time(9, 59, 59, 999999),
+                        reverse_speed_ss_7_10, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_SS,
                         datetime.time(10, 0), datetime.time(13, 59, 59, 999999),
-                        speed_ss_10_14
+                        speed_ss_10_14, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_SS,
+                        datetime.time(10, 0), datetime.time(13, 59, 59, 999999),
+                        reverse_speed_ss_10_14, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_SS,
                         datetime.time(14, 0), datetime.time(19, 59, 59, 999999),
-                        speed_ss_14_19
+                        speed_ss_14_19, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_SS,
+                        datetime.time(14, 0), datetime.time(19, 59, 59, 999999),
+                        reverse_speed_ss_14_19, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_SS,
                         datetime.time(19, 0), datetime.time(21, 59, 59, 999999),
-                        speed_ss_19_22
+                        speed_ss_19_22, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_SS,
+                        datetime.time(19, 0), datetime.time(21, 59, 59, 999999),
+                        reverse_speed_ss_19_22, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_SS,
                         datetime.time(22, 0), datetime.time(23, 59, 59, 999999),
-                        speed_ss_22_4
+                        speed_ss_22_4, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_SS,
+                        datetime.time(22, 0), datetime.time(23, 59, 59, 999999),
+                        reverse_speed_ss_22_4, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
                     add_average_speed(
                         new_point, DAYS_SM,
                         datetime.time(0, 0), datetime.time(3, 59, 59, 999999),
-                        speed_ss_22_4
+                        speed_ss_22_4, models.ShapePointAverageSpeed.DIRECTION_FORWARD
+                    )
+                    add_average_speed(
+                        new_point, DAYS_SM,
+                        datetime.time(0, 0), datetime.time(3, 59, 59, 999999),
+                        reverse_speed_ss_22_4, models.ShapePointAverageSpeed.DIRECTION_REVERSE
                     )
 
     except AverageSpeedException as e:

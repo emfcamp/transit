@@ -111,7 +111,7 @@ class MessageAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
-        return True
+        return False
 
 
 @admin.register(models.WelshStationName)

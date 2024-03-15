@@ -156,12 +156,18 @@ class Journey(models.Model):
         except ObjectDoesNotExist:
             return None
 
-    def start_date(self) -> typing.Optional[datetime.date]:
+    def start_datetime(self) -> typing.Optional[datetime.datetime]:
         start_point = self.points.order_by('order').first()
         if not start_point:
             return None
-        return start_point.arrival_time.date() if start_point.arrival_time else (
-            start_point.departure_time.date() if start_point.departure_time else None)
+        return start_point.arrival_time if start_point.arrival_time else (
+            start_point.departure_time if start_point.departure_time else None)
+
+    def start_date(self) -> typing.Optional[datetime.date]:
+        start_datetime = self.start_datetime()
+        if not start_datetime:
+            return None
+        return start_datetime.date()
 
 
 class JourneyPoint(models.Model):
@@ -221,6 +227,14 @@ class ShapePoint(models.Model):
 
 
 class ShapePointAverageSpeed(models.Model):
+    DIRECTION_FORWARD = 0
+    DIRECTION_REVERSE = 1
+
+    DIRECTIONS = (
+        (DIRECTION_FORWARD, "Forward"),
+        (DIRECTION_REVERSE, "Reverse"),
+    )
+
     id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
     point = models.ForeignKey(ShapePoint, on_delete=models.CASCADE, related_name="average_speeds")
     valid_monday = models.BooleanField(blank=True, default=False)
@@ -233,6 +247,7 @@ class ShapePointAverageSpeed(models.Model):
     validity_start_time = models.TimeField()
     validity_end_time = models.TimeField()
     speed_kmh = models.FloatField()
+    direction = models.PositiveSmallIntegerField(choices=DIRECTIONS, default=DIRECTION_FORWARD)
 
 
 class ServiceAlert(models.Model):
