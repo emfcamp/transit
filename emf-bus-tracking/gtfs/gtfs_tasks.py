@@ -404,6 +404,15 @@ def write_timetables_file(file, agency_timezone: pytz.timezone):
         csv_file.writeheader()
 
         for route in models.Route.objects.all():
+            inbound_dest_point: models.JourneyPoint = models.JourneyPoint.objects.filter(
+                journey__route=route,
+                journey__direction=models.Journey.DIRECTION_INBOUND
+            ).order_by('-order').first()
+            outbound_dest_point: models.JourneyPoint = models.JourneyPoint.objects.filter(
+                journey__route=route,
+                journey__direction=models.Journey.DIRECTION_OUTBOUND
+            ).order_by('-order').first()
+
             start_dates = set()
             for journey in route.journey_set.filter(public=True):
                 start_date = journey.start_datetime().astimezone(agency_timezone).date()
@@ -424,7 +433,7 @@ def write_timetables_file(file, agency_timezone: pytz.timezone):
                     "saturday": "1" if date.weekday() == 5 else "0",
                     "sunday": "1" if date.weekday() == 6 else "0",
                     "include_exceptions": "1",
-                    "timetable_label": f"Inbound - {date.isoformat()}",
+                    "timetable_label": f"Towards {inbound_dest_point.stop.name} - {date.strftime("%d %b %Y")}",
                     "service_notes": "",
                     "direction_name": "Inbound",
                     "orientation": "horizontal",
@@ -444,7 +453,7 @@ def write_timetables_file(file, agency_timezone: pytz.timezone):
                     "saturday": "1" if date.weekday() == 5 else "0",
                     "sunday": "1" if date.weekday() == 6 else "0",
                     "include_exceptions": "1",
-                    "timetable_label": f"Outbound - {date.isoformat()}",
+                    "timetable_label": f"Towards {outbound_dest_point.stop.name} - {date.strftime("%d %b %Y")}",
                     "service_notes": "",
                     "direction_name": "Outbound",
                     "orientation": "horizontal",
