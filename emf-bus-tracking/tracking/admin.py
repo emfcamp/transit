@@ -3,6 +3,7 @@ import celery.result
 import pytz
 import csv
 import datetime
+import re
 import codecs
 from django.contrib import admin
 from adminsortable2.admin import SortableAdminMixin, SortableInlineAdminMixin, SortableAdminBase
@@ -15,6 +16,11 @@ from django.utils import timezone
 from django.contrib import messages
 from gtfs import gtfs_tasks
 from . import models, os_average_speed
+
+DATES_RE = (
+    (re.compile(r"^\d{4}-\d{2}-\d{2}$"), "%Y-%m-%d"),
+    (re.compile(r"^\d{2}/\d{2}/\d{4}$"), "%d/%m/%Y"),
+)
 
 
 @admin.register(models.Stop)
@@ -50,7 +56,10 @@ class VehicleAdmin(admin.ModelAdmin):
 
         if "date" in request.POST:
             try:
-                service_date = datetime.datetime.strptime(request.POST["date"], "%Y-%m-%d").date()
+                for date_re in DATES_RE:
+                    if date_re[0].match(request.POST["date"]):
+                        service_date = datetime.datetime.strptime(request.POST["date"], date_re[1]).date()
+                        break
             except ValueError:
                 messages.add_message(request, messages.ERROR, "Invalid date")
             else:
