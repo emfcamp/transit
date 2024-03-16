@@ -19,7 +19,7 @@ from tracking import models
 def generate_gtfs_schedule():
     now = timezone.now()
     feed_version = f"{now.date().isoformat()}-{uuid.uuid4()}"
-    agency_timezone = pytz.timezone(settings.GTFS_CONFIG["agency"]["timezone"])
+    agency_timezone = pytz.timezone(settings.TRANSIT_CONFIG["timezone"])
 
     output_file = io.BytesIO()
     output_zip = zipfile.ZipFile(output_file, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False)
@@ -87,7 +87,7 @@ def write_agency_file(file, output_json: dict):
         "agency_id": settings.TRANSIT_CONFIG["agency_id"],
         "agency_name": settings.TRANSIT_CONFIG["agency_name"],
         "agency_url": settings.TRANSIT_CONFIG["agency_url"],
-        "agency_timezone": settings.GTFS_CONFIG["agency"]["timezone"],
+        "agency_timezone": settings.TRANSIT_CONFIG["timezone"],
         "agency_lang": settings.GTFS_CONFIG["agency"]["lang"] or "",
         "agency_phone": settings.GTFS_CONFIG["agency"]["phone"] or "",
         "agency_fare_url": settings.GTFS_CONFIG["agency"]["fare_url"] or "",

@@ -32,7 +32,41 @@ class VehiclePositionAdmin(admin.TabularInline):
 
 @admin.register(models.Vehicle)
 class VehicleAdmin(admin.ModelAdmin):
+    change_form_template = "tracking/vehicle_change.html"
     inlines = [VehiclePositionAdmin]
+    readonly_fields = ("id",)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        urls = [
+                   path("generate_vehicle_sheet/<vehicle_id>/",
+                        self.admin_site.admin_view(self.generate_vehicle_sheet),
+                        name="tracking_vehicle_generate_sheet"),
+               ] + urls
+        return urls
+
+    def generate_vehicle_sheet(self, request, vehicle_id):
+        vehicle = get_object_or_404(self.model, id=vehicle_id)
+
+        if "date" in request.POST:
+            try:
+                service_date = datetime.datetime.strptime(request.POST["date"], "%Y-%m-%d").date()
+            except ValueError:
+                messages.add_message(request, messages.ERROR, "Invalid date")
+            else:
+                return redirect(
+                    "vehicle_sheet",
+                    vehicle_id=vehicle.id,
+                    service_date=service_date
+                )
+
+        context = dict(
+            self.admin_site.each_context(request),
+            opts=self.model._meta,
+            object_id=vehicle_id,
+            vehicle=vehicle
+        )
+        return TemplateResponse(request, "tracking/vehicle_generate_sheet.html", context)
 
 
 @admin.register(models.Route)
@@ -245,7 +279,7 @@ class ShapeAdmin(SortableAdminBase, admin.ModelAdmin):
         urls = [
                    path("import_shape/", self.admin_site.admin_view(self.import_shape), name="tracking_shape_import"),
                    path("update_shape_average_speed/<shape_id>/",
-                        self.admin_site.admin_view(self.updae_shape_average_speed),
+                        self.admin_site.admin_view(self.update_shape_average_speed),
                         name="tracking_shape_update_average_speed"),
                ] + urls
         return urls
@@ -316,7 +350,7 @@ class ShapeAdmin(SortableAdminBase, admin.ModelAdmin):
                     order=i,
                 )
 
-    def updae_shape_average_speed(self, request, shape_id):
+    def update_shape_average_speed(self, request, shape_id):
         shape = get_object_or_404(self.model, id=shape_id)
 
         pending = False

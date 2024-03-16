@@ -11,8 +11,9 @@ from . import consts
 
 class Stop(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, unique=True, default=uuid.uuid4)
-    code = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, db_index=True)
+    code = models.CharField(max_length=255, blank=True, null=True, db_index=True)
+    name = models.CharField(max_length=255)
+    internal_name = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     latitude = models.FloatField()
     longitude = models.FloatField()

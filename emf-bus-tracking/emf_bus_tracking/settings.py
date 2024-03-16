@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import os
+import cryptography.hazmat.primitives.serialization
 from pathlib import Path
 from django_query_profiler.settings import *
 
@@ -134,11 +135,11 @@ TRANSIT_CONFIG = {
     "agency_id": "EMF",
     "agency_name": "Transport for EMF",
     "agency_url": "https://bus.emf.camp",
+    "timezone": "Europe/London",
 }
 
 GTFS_CONFIG = {
     "agency": {
-        "timezone": "Europe/London",
         "lang": "en",
         "phone": None,
         "fare_url": None,
@@ -173,6 +174,13 @@ DARWIN_MESSAGING_PASSWORD = os.getenv("DARWIN_MESSAGING_PASSWORD")
 DARWIN_CLIENT_ID = os.getenv("DARWIN_CLIENT_ID")
 DARWIN_S3_ACCESS_KEY = os.getenv("DARWIN_S3_ACCESS_KEY")
 DARWIN_S3_SECRET_KEY = os.getenv("DARWIN_S3_SECRET_KEY")
+
+APPLE_MAPS_KEY_ID = os.getenv("APPLE_MAPS_KEY_ID")
+APPLE_MAPS_TEAM_ID = os.getenv("APPLE_MAPS_TEAM_ID")
+APPLE_MAPS_KEY_LOCATION = os.getenv("APPLE_MAPS_KEY_LOCATION")
+
+with open(APPLE_MAPS_KEY_LOCATION, "rb") as f:
+    APPLE_MAPS_KEY = cryptography.hazmat.primitives.serialization.load_pem_private_key(f.read(), None)
 
 if DEBUG:
     DJANGO_QUERY_PROFILER_REDIS_HOST = os.getenv("DJANGO_QUERY_PROFILER_REDIS_HOST", "localhost")

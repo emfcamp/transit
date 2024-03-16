@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import json
+import cryptography.hazmat.primitives.serialization
 from django_query_profiler.settings import *
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -148,11 +149,11 @@ TRANSIT_CONFIG = {
     "agency_id": "EMF",
     "agency_name": "Transport for EMF",
     "agency_url": "https://bus.emf.camp",
+    "timezone": "Europe/London",
 }
 
 GTFS_CONFIG = {
     "agency": {
-        "timezone": "Europe/London",
         "lang": "en",
         "phone": None,
         "fare_url": None,
@@ -179,6 +180,13 @@ with open(BASE_DIR / "secrets" / "os.json") as f:
     os_secrets = json.load(f)
 with open(BASE_DIR / "secrets" / "darwin.json") as f:
     darwin_secrets = json.load(f)
+with open(BASE_DIR / "secrets" / "apple_maps.json") as f:
+    apple_maps_data = json.load(f)
+with open(BASE_DIR / "secrets" / "apple-maps-key.p8", "rb") as f:
+    APPLE_MAPS_KEY = cryptography.hazmat.primitives.serialization.load_pem_private_key(f.read(), None)
+
+APPLE_MAPS_KEY_ID = apple_maps_data["key_id"]
+APPLE_MAPS_TEAM_ID = apple_maps_data["team_id"]
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
 DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400

@@ -22,3 +22,5 @@ pytz
 django-cprofile-middleware
 django-query-profiler
 markdown
+cryptography
+polyline

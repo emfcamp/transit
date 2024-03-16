@@ -1,0 +1,177 @@
+* {
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: 'Cymru Sans Transport';
+    src: url('https://bus.emf.camp/about/assets/fonts/CymruSansTransport-Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Cymru Sans Transport';
+    src: url('https://bus.emf.camp/about/assets/fonts/CymruSansTransport-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+body {
+    font-family: sans-serif;
+}
+
+.banner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.banner .logo {
+    flex-shrink: 1;
+    flex-basis: 50px;
+}
+
+.banner .logo img {
+    width: 100%;
+    filter: invert(1);
+}
+
+.banner h1 {
+    letter-spacing: 0.6px;
+    font-size: 1.7em;
+    margin: 0;
+    font-weight: normal;
+    font-family: "Cymru Sans Transport", sans-serif;
+}
+
+.banner h1 .welsh {
+    font-weight: 500;
+}
+
+.sheet-info h2 {
+    margin-bottom: 0;
+}
+
+.sheet-info {
+    padding-bottom: 10px;
+    border-bottom: 1px solid black;
+}
+
+table th {
+    text-align: right;
+    padding-top: 4px;
+}
+
+table td {
+    text-align: left;
+    padding-left: 5px;
+    padding-top: 4px;
+}
+
+.block {
+    border: 1px solid black;
+}
+
+.line {
+    padding: 5px;
+}
+
+.journey {
+    border-top: 1px solid black;
+    break-inside: avoid;
+}
+
+.journey:first-of-type {
+    border-top: none;
+}
+
+.line.point {
+    border-top: 1px solid #aaa;
+}
+
+.line.new-journey h3 {
+    margin: 0;
+}
+
+.line.point p {
+    margin: 0;
+}
+
+.point.point-arrival {
+    background: #bfb;
+}
+
+.point.point-departure {
+    background: #bbf;
+}
+
+.stop-name, .timestamp {
+    background: #ccc;
+    border-radius: 5px;
+    padding: 2px;
+}
+
+.true, .false, .route {
+    border-radius: 5px;
+    padding: 2px;
+}
+
+.true {
+    background: #bfb;
+}
+
+.false {
+    background: #fbb;
+}
+
+.headcode {
+    font-family: monospace;
+    font-size: 1.2em;
+}
+
+.reg-plate {
+    background: #ffd307;
+    font-family: monospace;
+    font-size: 1.2em;
+    padding: 5px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.line.wait {
+    background: #ffb;
+}
+
+.line.wait p {
+    margin: 0;
+}
+
+.shapes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.shape h3 {
+    margin-top: 0;
+}
+
+.shape img {
+    width: 100%;
+    height: auto;
+}
+
+.shape {
+    position: relative;
+}
+
+.shape:not(:last-of-type)::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    right: -5px;
+    background: black;
+}

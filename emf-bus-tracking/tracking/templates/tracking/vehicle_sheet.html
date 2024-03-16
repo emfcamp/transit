@@ -1,0 +1,107 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Vehicle sheet for {{ vehicle.name }}</title>
+
+    <link rel="stylesheet" href="{% static "tracking/vehicle_sheet.css" %}"/>
+</head>
+<body>
+<div class="banner">
+    <div class="logo">
+        <img src="https://bus.emf.camp/about/assets/img/logo.svg" alt="TfEMF Logo">
+    </div>
+    <h1>
+        <span class="welsh">Trafnidiaeth EMF</span><br>
+        Transport for EMF
+    </h1>
+</div>
+<div class="sheet-info">
+    <h2>Vehicle sheet for {{ vehicle.name }}</h2>
+    <table>
+        <tr>
+            <th>Registration plate</th>
+            <td><span class="reg-plate">{{ vehicle.registration_plate }}</span></td>
+        </tr>
+        <tr>
+            <th>Date</th>
+            <td>{{ service_date|date:"l, jS F Y" }}</td>
+        </tr>
+    </table>
+</div>
+
+<h2>Shapes</h2>
+<div class="shapes">
+{% for shape in shapes %}
+    <div class="shape">
+        <h3>{{ shape.name }}</h3>
+        <img src="{{ shape.url }}" alt="">
+    </div>
+{% endfor %}
+</div>
+
+{% for block in blocks %}
+    <h2>Block #{{ forloop.counter }}</h2>
+    <div class="block">
+        {% for line in block %}
+            {% if line.type == "new_journey" %}
+                {% if forloop.counter0 != 0 %}
+                    </div>
+                {% endif %}
+                <div class="journey">
+                <div class="line new-journey">
+                    <h3>Journey: <span class="headcode">{{ line.code }}</span></h3>
+                    <table>
+                        {% if line.route %}
+                            <tr>
+                                <th>Route</th>
+                                <td>
+                                    <span class="route"
+                                          style="background-color: {{ line.route.colour }}; color: {{ line.route.text_colour }}">
+                                        {{ line.route.name }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Direction</th>
+                                <td>{{ line.direction }}</td>
+                            </tr>
+                        {% endif %}
+                        {% if line.shape %}
+                            <tr>
+                                <th>Shape</th>
+                                <td>{{ line.shape }}</td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Public</th>
+                            <td>{% if line.public %}<span class="true">Yes</span>{% else %}
+                                <span class="false">No</span>{% endif %}</td>
+                        </tr>
+                    </table>
+                </div>
+            {% elif line.type == "point_arrival" %}
+                <div class="line point point-arrival">
+                    <p>
+                        Arrive at <span class="stop-name">{{ line.name }}</span> by
+                        <span class="timestamp">{{ line.time|date:"h:i:s a, jS M" }}</span>
+                    </p>
+                </div>
+            {% elif line.type == "point_departure" %}
+                <div class="line point point-departure">
+                    <p>
+                        Depart <span class="stop-name">{{ line.name }}</span> at
+                        <span class="timestamp">{{ line.time|date:"h:i:s a, jS M" }}</span>
+                    </p>
+                </div>
+            {% elif line.type == "wait" %}
+                <div class="line wait">
+                    <p>Wait: {{ line.hours }} hours {{ line.minutes }} minutes</p>
+                </div>
+            {% endif %}
+        {% endfor %}
+        </div>
+    </div>
+{% endfor %}
+</body>
+</html>

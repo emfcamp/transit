@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "admin/css/forms.css" %}">
+    <script src="/admin/jsi18n/"></script>
+    <script src="{% static "admin/js/core.js" %}"></script>
+    <script src="{% static "admin/js/calendar.js" %}"></script>
+    <script src="{% static "admin/js/admin/DateTimeShortcuts.js" %}"></script>
+{% endblock %}
+
+{% block content %}
+    <h1>Generate vehicle sheet</h1>
+    <h2>{{ vehicle }}</h2>
+    <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            <div class="form-row">
+                <div class="flex-container">
+                    <label for="date">Date</label>
+                    <input type="text" class="vDateField" name="date" id="date" required />
+                </div>
+            </div>
+        </fieldset>
+        <div class="submit-row">
+            <input type="submit" class="default" value="Generate" name="_save"/>
+        </div>
+    </form>
+{% endblock %}
